@@ -46,4 +46,4 @@ async function npboottprm_replext(cellBlock = 'T2 Cell Block 1.1') {
 }
 
 // Usage: Pass the desired cell block as an argument
-npboottprm_replext('T2 Cell Block 2.1');
+npboottprm_replext();
