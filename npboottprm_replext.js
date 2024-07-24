@@ -1,26 +1,37 @@
 const puppeteer = require('puppeteer');
 const delay = ms => new Promise(res => setTimeout(res, ms));
 
-// Function to get a random number between min and max (inclusive)
 function getRandomNumber(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-// Function to get a random float between min and max
 function getRandomFloat(min, max) {
     return Math.random() * (max - min) + min;
 }
 
-async function npboottprm_replext(cellBlock = 'T2 Cell Block 1.1', n_simulations = 10, nboot = 1000, conf_level = 0.95) {
-    const browser = await puppeteer.launch({ headless: false });
+async function npboottprm_replext(options = {}) {
+    const {
+        cellBlock = 'T2 Cell Block 1.1',
+        n_simulations = 10,
+        nboot = 1000,
+        conf_level = 0.95,
+        delayBetweenActions = 500,
+        website = 'https://mightymetrika.shinyapps.io/npbreplext031/'
+    } = options;
+
+    const browser = await puppeteer.launch({ 
+        headless: false,
+        args: ['--start-maximized'] });
     const page = await browser.newPage();
+    await page.setViewport({
+        width: 1366,
+        height: 768,
+      });
 
     try {
-        // Navigate to the page and ensure everything is loaded
-        await page.goto('https://mightymetrika.shinyapps.io/npbreplext031/');
+        await page.goto(website);
         await page.waitForSelector('#M1', { timeout: 20000 });
 
-        // Select the cell block
         await page.click('.selectize-input');
         await page.waitForSelector('.selectize-dropdown-content .option', { visible: true });
         
@@ -34,31 +45,36 @@ async function npboottprm_replext(cellBlock = 'T2 Cell Block 1.1', n_simulations
         }
         console.log(`Selected Cell Block: ${cellBlock}`);
 
-        // Function to fill input with a random value
         async function fillRandomInput(selector, min, max, isInteger = true) {
-            const value = isInteger ? getRandomNumber(min, max) : getRandomFloat(min, max).toFixed(2);
-            await page.$eval(selector, (el, val) => el.value = val, value);
+            const value = isInteger ? getRandomNumber(min, max) : getRandomFloat(min, max);
+            await page.$eval(selector, (element, val) => {
+                element.value = val;
+                const event = new Event('change', { bubbles: true });
+                element.dispatchEvent(event);
+            }, value.toString());
             console.log(`Set ${selector} to ${value}`);
+            if (delayBetweenActions > 0) await delay(delayBetweenActions);
         }
 
-        // Fill in parameters based on the selected cell block
+        async function fillUserDefinedInput(selector, value) {
+            await page.$eval(selector, (element, val) => {
+                element.value = val;
+                const event = new Event('change', { bubbles: true });
+                element.dispatchEvent(event);
+            }, value.toString());
+            console.log(`Set ${selector} to ${value}`);
+            if (delayBetweenActions > 0) await delay(delayBetweenActions);
+        }
+
         if (cellBlock.startsWith('T2') || cellBlock.startsWith('T3')) {
             await fillRandomInput('#M1', 1, 10);
-            await delay(200);
             await fillRandomInput('#S1', 0, 5, false);
-            await delay(200);
             await fillRandomInput('#M2', 1, 10);
-            await delay(200);
             await fillRandomInput('#S2', 0, 5, false);
-            await delay(200);
             await fillRandomInput('#Sk1', -2, 2, false);
-            await delay(200);
             await fillRandomInput('#Sk2', -2, 2, false);
-            await delay(200);
             await fillRandomInput('#n1', 5, 50);
-            await delay(200);
             await fillRandomInput('#n2', 5, 50);
-            await delay(200);
         } else if (cellBlock.startsWith('T4') || cellBlock.startsWith('TS1')) {
             await fillRandomInput('#par1_1', 0, 10, false);
             await fillRandomInput('#par2_1', 0, 5, false);
@@ -74,7 +90,11 @@ async function npboottprm_replext(cellBlock = 'T2 Cell Block 1.1', n_simulations
                                cellBlock.includes('5.1') ? 'rcauchy' :
                                cellBlock.includes('6.1') ? 'rchisq,rpois' :
                                'rlnorm,rchisq';
-            await page.$eval('#rdist', (el, val) => el.value = val, rdistValue);
+            await page.$eval('#rdist', (element, val) => {
+                element.value = val;
+                const event = new Event('change', { bubbles: true });
+                element.dispatchEvent(event);
+            }, rdistValue);
             console.log(`Set rdist to ${rdistValue}`);
         } else if (cellBlock.startsWith('T5') || cellBlock.startsWith('T6')) {
             await fillRandomInput('#M1', 1, 10);
@@ -101,23 +121,26 @@ async function npboottprm_replext(cellBlock = 'T2 Cell Block 1.1', n_simulations
         }
 
         // Set user-defined parameters
-        await page.$eval('#n_simulations', (el, val) => el.value = val, n_simulations);
-        await delay(200);
-        await page.$eval('#nboot', (el, val) => el.value = val, nboot);
-        //await page.$eval('#conf.level', (el, val) => el.value = val, conf_level);
+        await fillUserDefinedInput('#n_simulations', n_simulations);
+        await fillUserDefinedInput('#nboot', nboot);
+        //await fillUserDefinedInput('#conf.level', conf_level);
 
-        // Click the Run Simulation button
-        await delay(2000);
+        if (delayBetweenActions > 0) await delay(2000);
+
         await page.click('#runSim');
         console.log('Clicked Run Simulation button');
 
-        // Wait for results to complete
         await page.waitForSelector('#DataTables_Table_1', { timeout: 100000 });
         console.log('Simulation table loaded');
 
-        // Click the Submit button
         await page.click('#submit');
         console.log('Clicked Submit button');
+        
+        // Scrolling to the top of the page
+        await page.evaluate(() => {
+            window.scrollTo(0, 0);
+        });
+
         await delay(5000);
 
         console.log('Process completed successfully');
@@ -128,5 +151,76 @@ async function npboottprm_replext(cellBlock = 'T2 Cell Block 1.1', n_simulations
     }
 }
 
-// Usage: Pass the desired cell block and simulation parameters as arguments
-npboottprm_replext('T2 Cell Block 1.1', 10, 1000, 0.95);
+// // Usage example
+// npboottprm_replext({
+//     cellBlock: 'T2 Cell Block 1.1',
+//     n_simulations: 10,
+//     nboot: 1000,
+//     conf_level: 0.95,
+//     delayBetweenActions: 500,
+//     website: 'https://mightymetrika.shinyapps.io/npbreplext031/'
+// });
+
+async function repeatedNpboottprm(options = {}) {
+    const {
+        iterations = Infinity,  // Run indefinitely by default
+        cellBlock = 'T2 Cell Block 1.1',
+        n_simulations = 10,
+        nboot = 1000,
+        conf_level = 0.95,
+        delayBetweenActions = 500,
+        website = 'https://mightymetrika.shinyapps.io/npbreplext031/',
+        delayBetweenIterations = 5000  // Delay between each iteration
+    } = options;
+
+    let currentIteration = 0;
+    let stopRequested = false;
+
+    console.log(`Starting repeated simulations. Press Ctrl+C to stop.`);
+
+    while (currentIteration < iterations && !stopRequested) {
+        console.log(`\nStarting iteration ${currentIteration + 1}`);
+        
+        try {
+            await npboottprm_replext({
+                cellBlock,
+                n_simulations,
+                nboot,
+                conf_level,
+                delayBetweenActions,
+                website
+            });
+            
+            currentIteration++;
+            
+            if (currentIteration < iterations) {
+                console.log(`Waiting ${delayBetweenIterations}ms before next iteration...`);
+                await delay(delayBetweenIterations);
+            }
+        } catch (error) {
+            console.error(`Error in iteration ${currentIteration + 1}:`, error);
+            // Optionally, we could break the loop here if we want to stop on errors
+            // break;
+        }
+    }
+
+    console.log(`Completed ${currentIteration} iterations.`);
+}
+
+// Handle Ctrl+C to stop the process gracefully
+process.on('SIGINT', () => {
+    console.log('\nStop requested. Finishing current iteration...');
+    stopRequested = true;
+});
+
+// Usage example
+repeatedNpboottprm({
+    iterations: 5,  // Run 5 times, or omit for indefinite running
+    cellBlock: 'T2 Cell Block 1.1',
+    n_simulations: 10,
+    nboot: 1000,
+    conf_level: 0.95,
+    delayBetweenActions: 500,
+    website: 'https://mightymetrika.shinyapps.io/npbreplext031/',
+    delayBetweenIterations: 5000  // 5 seconds between iterations
+});
