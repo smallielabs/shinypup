@@ -1,4 +1,9 @@
 const puppeteer = require('puppeteer');
+const fs = require('fs');
+const path = require('path');
+const csv = require('csv-parser');
+const { plot } = require('nodeplotlib');
+
 const delay = ms => new Promise(res => setTimeout(res, ms));
 
 function getRandomNumber(min, max) {
@@ -151,26 +156,18 @@ async function npboottprm_replext(options = {}) {
     }
 }
 
-// // Usage example
-// npboottprm_replext({
-//     cellBlock: 'T2 Cell Block 1.1',
-//     n_simulations: 10,
-//     nboot: 1000,
-//     conf_level: 0.95,
-//     delayBetweenActions: 500,
-//     website: 'https://mightymetrika.shinyapps.io/npbreplext031/'
-// });
-
 async function repeatedNpboottprm(options = {}) {
     const {
-        iterations = Infinity,  // Run indefinitely by default
+        iterations = Infinity,
         cellBlock = 'T2 Cell Block 1.1',
         n_simulations = 10,
         nboot = 1000,
         conf_level = 0.95,
         delayBetweenActions = 500,
         website = 'https://mightymetrika.shinyapps.io/npbreplext031/',
-        delayBetweenIterations = 5000  // Delay between each iteration
+        delayBetweenIterations = 5000,
+        downloadFrequency = 5,
+        simulationsToAnalyze = 10
     } = options;
 
     let currentIteration = 0;
@@ -193,34 +190,125 @@ async function repeatedNpboottprm(options = {}) {
             
             currentIteration++;
             
+            // Check if it's time to download and analyze data
+            if (currentIteration % downloadFrequency === 0) {
+                console.log(`Downloading and analyzing data...`);
+                const data = await downloadAndProcessCSV(website);
+                await analyzeData(data.slice(-simulationsToAnalyze));
+            }
+            
             if (currentIteration < iterations) {
                 console.log(`Waiting ${delayBetweenIterations}ms before next iteration...`);
                 await delay(delayBetweenIterations);
             }
         } catch (error) {
             console.error(`Error in iteration ${currentIteration + 1}:`, error);
-            // Optionally, we could break the loop here if we want to stop on errors
-            // break;
         }
     }
 
     console.log(`Completed ${currentIteration} iterations.`);
 }
 
-// Handle Ctrl+C to stop the process gracefully
-process.on('SIGINT', () => {
-    console.log('\nStop requested. Finishing current iteration...');
-    stopRequested = true;
-});
+async function downloadAndProcessCSV(website) {
+    const browser = await puppeteer.launch({ headless: false });
+    const page = await browser.newPage();
+    
+    await page.goto(website);
+    
+    // Wait for the download button to be available
+    await page.waitForSelector('#downloadBtn');
+    
+    // Set up a listener for the download event
+    const downloadPath = path.resolve('./downloads');
+    // await page._client.send('Page.setDownloadBehavior', {
+    //     behavior: 'allow',
+    //     downloadPath: downloadPath,
+    // });
+    const client = await page.createCDPSession()
+    await client.send('Page.setDownloadBehavior', {
+        behavior: 'allow',
+        downloadPath
+    })
+
+    // Delay before clicking download button
+    await delay(5000);
+    
+    // Click the download button
+    await page.click('#downloadBtn');
+    
+    // Wait for the download to complete (you may need to adjust the delay)
+    await delay(10000);
+    
+    await browser.close();
+    
+    // Find the most recently downloaded file
+    const files = fs.readdirSync(downloadPath);
+    const mostRecentFile = files.reduce((prev, current) => {
+        return fs.statSync(path.join(downloadPath, prev)).mtime > fs.statSync(path.join(downloadPath, current)).mtime ? prev : current;
+    });
+    
+    // Read and parse the CSV file
+    const results = [];
+    return new Promise((resolve, reject) => {
+        fs.createReadStream(path.join(downloadPath, mostRecentFile))
+            .pipe(csv())
+            .on('data', (data) => results.push(data))
+            .on('end', () => {
+                resolve(results);
+            })
+            .on('error', reject);
+    });
+}
+
+async function analyzeData(data) {
+    // Convert string values to numbers where necessary
+    const processedData = data.map(row => ({
+        st: parseFloat(row.st),
+        wt: parseFloat(row.wt),
+        npbtt: parseFloat(row.npbtt),
+        wrst: parseFloat(row.wrst),
+        ptt: parseFloat(row.ptt)
+    }));
+
+    // Create scatter plots
+    const plotData = [
+        {
+            x: processedData.map(d => d.st),
+            y: processedData.map(d => d.wt),
+            mode: 'markers',
+            type: 'scatter',
+            name: 'ST vs WT'
+        },
+        {
+            x: processedData.map(d => d.npbtt),
+            y: processedData.map(d => d.wrst),
+            mode: 'markers',
+            type: 'scatter',
+            name: 'NPBTT vs WRST'
+        }
+    ];
+
+    const layout = {
+        title: 'Simulation Results',
+        xaxis: { title: 'ST / NPBTT' },
+        yaxis: { title: 'WT / WRST' }
+    };
+
+    plot(plotData, layout);
+    console.log('Plots generated. Check your browser for the visualizations.');
+}
 
 // Usage example
 repeatedNpboottprm({
-    iterations: 5,  // Run 5 times, or omit for indefinite running
+    iterations: 20,
     cellBlock: 'T2 Cell Block 1.1',
     n_simulations: 10,
     nboot: 1000,
     conf_level: 0.95,
     delayBetweenActions: 500,
     website: 'https://mightymetrika.shinyapps.io/npbreplext031/',
-    delayBetweenIterations: 5000  // 5 seconds between iterations
+    delayBetweenIterations: 5000,
+    downloadFrequency: 2,
+    simulationsToAnalyze: 5
 });
+

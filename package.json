@@ -10,6 +10,8 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "csv-parser": "^3.0.0",
+    "nodeplotlib": "^1.1.2",
     "puppeteer": "^22.13.1"
   }
 }
