@@ -72,14 +72,14 @@ async function npboottprm_replext(options = {}) {
         }
 
         if (cellBlock.startsWith('T2') || cellBlock.startsWith('T3')) {
-            await fillRandomInput('#M1', 1, 10);
-            await fillRandomInput('#S1', 0, 5, false);
-            await fillRandomInput('#M2', 1, 10);
-            await fillRandomInput('#S2', 0, 5, false);
+            await fillRandomInput('#M1', 5, 10);
+            await fillRandomInput('#S1', 1, 5, false);
+            await fillRandomInput('#M2', 5, 10);
+            await fillRandomInput('#S2', 1, 5, false);
             await fillRandomInput('#Sk1', -2, 2, false);
             await fillRandomInput('#Sk2', -2, 2, false);
-            await fillRandomInput('#n1', 5, 50);
-            await fillRandomInput('#n2', 5, 50);
+            await fillRandomInput('#n1', 3, 15);
+            await fillRandomInput('#n2', 3, 15);
         } else if (cellBlock.startsWith('T4') || cellBlock.startsWith('TS1')) {
             await fillRandomInput('#par1_1', 0, 10, false);
             await fillRandomInput('#par2_1', 0, 5, false);
@@ -260,9 +260,34 @@ async function downloadAndProcessCSV(website) {
     });
 }
 
+// Helper functions for statistics (unchanged)
+const mean = (arr) => arr.reduce((a, b) => a + b, 0) / arr.length;
+const median = (arr) => {
+    const sorted = [...arr].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+};
+const standardDeviation = (arr) => {
+    const avg = mean(arr);
+    const squareDiffs = arr.map(value => Math.pow(value - avg, 2));
+    return Math.sqrt(mean(squareDiffs));
+};
+
 async function analyzeData(data) {
-    // Convert string values to numbers where necessary
-    const processedData = data.map(row => ({
+    // Convert string values to numbers and calculate additional metrics
+    const processedData = data.map((row, index) => ({
+        rowIndex: index,
+        n1: parseInt(row.n1),
+        n2: parseInt(row.n2),
+        totalSampleSize: parseInt(row.n1) + parseInt(row.n2),
+        m1: parseFloat(row.m1),
+        m2: parseFloat(row.m2),
+        s1: parseFloat(row.s1),
+        s2: parseFloat(row.s2),
+        sk1: parseFloat(row.sk1),
+        sk2: parseFloat(row.sk2),
+        cohensD: Math.abs(parseFloat(row.m1) - parseFloat(row.m2)) / 
+                 Math.sqrt((Math.pow(parseFloat(row.s1), 2) + Math.pow(parseFloat(row.s2), 2)) / 2),
         st: parseFloat(row.st),
         wt: parseFloat(row.wt),
         npbtt: parseFloat(row.npbtt),
@@ -270,32 +295,118 @@ async function analyzeData(data) {
         ptt: parseFloat(row.ptt)
     }));
 
-    // Create scatter plots
-    const plotData = [
-        {
-            x: processedData.map(d => d.st),
-            y: processedData.map(d => d.wt),
-            mode: 'markers',
-            type: 'scatter',
-            name: 'ST vs WT'
-        },
-        {
-            x: processedData.map(d => d.npbtt),
-            y: processedData.map(d => d.wrst),
-            mode: 'markers',
-            type: 'scatter',
-            name: 'NPBTT vs WRST'
-        }
-    ];
-
-    const layout = {
-        title: 'Simulation Results',
-        xaxis: { title: 'ST / NPBTT' },
-        yaxis: { title: 'WT / WRST' }
+    const methods = ['st', 'wt', 'npbtt', 'wrst', 'ptt'];
+    const methodShapes = {
+        st: 'circle',
+        wt: 'square',
+        npbtt: 'diamond',
+        wrst: 'triangle-up',
+        ptt: 'star'
     };
 
-    plot(plotData, layout);
+    // 1. Power vs Cohen's d
+    const powerVsCohensD = methods.map(method => ({
+        x: processedData.map(d => d.cohensD),
+        y: processedData.map(d => d[method]),
+        mode: 'markers',
+        type: 'scatter',
+        name: method.toUpperCase(),
+        marker: { 
+            symbol: methodShapes[method],
+            color: processedData.map(d => d.rowIndex),
+            colorscale: 'Viridis',
+            showscale: false  // Hide color scale
+        }
+    }));
+
+    // 2. n1 vs n2
+    const n1VsN2 = [{
+        x: processedData.map(d => d.n1),
+        y: processedData.map(d => d.n2),
+        mode: 'markers',
+        type: 'scatter',
+        marker: { 
+            color: processedData.map(d => d.rowIndex),
+            colorscale: 'Viridis',
+            showscale: true  // Show color scale
+        }
+    }];
+
+    // 3. SD1 vs SD2
+    const sd1VsSd2 = methods.map(method => ({
+        x: processedData.map(d => d.s1),
+        y: processedData.map(d => d.s2),
+        mode: 'markers',
+        type: 'scatter',
+        name: method.toUpperCase(),
+        showlegend: false,  // Hide legend
+        marker: { 
+            symbol: methodShapes[method],
+            color: processedData.map(d => d.rowIndex),
+            colorscale: 'Viridis',
+            showscale: false  // Hide color scale
+        }
+    }));
+
+    // 4. Skew1 vs Skew2
+    const skew1VsSkew2 = methods.map(method => ({
+        x: processedData.map(d => d.sk1),
+        y: processedData.map(d => d.sk2),
+        mode: 'markers',
+        type: 'scatter',
+        name: method.toUpperCase(),
+        showlegend: false,  // Hide legend
+        marker: { 
+            symbol: methodShapes[method],
+            color: processedData.map(d => d.rowIndex),
+            colorscale: 'Viridis',
+            showscale: false  // Hide color scale
+        }
+    }));
+
+    // Generate plots
+    plot(powerVsCohensD, {
+        title: 'Power vs. Cohen\'s d',
+        xaxis: { title: 'Cohen\'s d' },
+        yaxis: { title: 'Power', range: [0, 1] },
+        showlegend: true
+    });
+
+    plot(n1VsN2, {
+        title: 'Sample Size: n1 vs n2',
+        xaxis: { title: 'n1' },
+        yaxis: { title: 'n2' },
+        showlegend: false
+    });
+
+    plot(sd1VsSd2, {
+        title: 'Standard Deviation: SD1 vs SD2',
+        xaxis: { title: 'SD1' },
+        yaxis: { title: 'SD2' },
+        showlegend: false
+    });
+
+    plot(skew1VsSkew2, {
+        title: 'Skewness: Skew1 vs Skew2',
+        xaxis: { title: 'Skew1' },
+        yaxis: { title: 'Skew2' },
+        showlegend: false
+    });
+
     console.log('Plots generated. Check your browser for the visualizations.');
+
+    // Calculate summary statistics (unchanged)
+    const summaryStats = methods.reduce((acc, method) => {
+        const values = processedData.map(d => d[method]);
+        acc[method] = {
+            mean: mean(values),
+            median: median(values),
+            sd: standardDeviation(values)
+        };
+        return acc;
+    }, {});
+
+    console.log('Summary Statistics:', summaryStats);
 }
 
 // Usage example
