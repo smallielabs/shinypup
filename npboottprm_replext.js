@@ -14,7 +14,16 @@ function getRandomFloat(min, max) {
     return Math.random() * (max - min) + min;
 }
 
-async function npboottprm_replext(options = {}) {
+// Modified function to generate random values based on seed
+function generateRandomFromSeed(seed, isInteger = true) {
+    if (isInteger) {
+        return getRandomNumber(Math.floor(seed * 0.8), Math.ceil(seed * 1.2));
+    } else {
+        return getRandomFloat(seed * 0.8, seed * 1.2);
+    }
+}
+
+async function npboottprm_replext(options = {}, seedValues = {}) {
     const {
         cellBlock = 'T2 Cell Block 1.1',
         n_simulations = 10,
@@ -31,7 +40,7 @@ async function npboottprm_replext(options = {}) {
     await page.setViewport({
         width: 1366,
         height: 768,
-      });
+    });
 
     try {
         await page.goto(website);
@@ -50,17 +59,6 @@ async function npboottprm_replext(options = {}) {
         }
         console.log(`Selected Cell Block: ${cellBlock}`);
 
-        async function fillRandomInput(selector, min, max, isInteger = true) {
-            const value = isInteger ? getRandomNumber(min, max) : getRandomFloat(min, max);
-            await page.$eval(selector, (element, val) => {
-                element.value = val;
-                const event = new Event('change', { bubbles: true });
-                element.dispatchEvent(event);
-            }, value.toString());
-            console.log(`Set ${selector} to ${value}`);
-            if (delayBetweenActions > 0) await delay(delayBetweenActions);
-        }
-
         async function fillUserDefinedInput(selector, value) {
             await page.$eval(selector, (element, val) => {
                 element.value = val;
@@ -71,23 +69,37 @@ async function npboottprm_replext(options = {}) {
             if (delayBetweenActions > 0) await delay(delayBetweenActions);
         }
 
-        if (cellBlock.startsWith('T2') || cellBlock.startsWith('T3')) {
-            await fillRandomInput('#M1', 5, 10);
-            await fillRandomInput('#S1', 1, 5, false);
-            await fillRandomInput('#M2', 5, 10);
-            await fillRandomInput('#S2', 1, 5, false);
-            await fillRandomInput('#Sk1', -2, 2, false);
-            await fillRandomInput('#Sk2', -2, 2, false);
-            await fillRandomInput('#n1', 3, 15);
-            await fillRandomInput('#n2', 3, 15);
-        } else if (cellBlock.startsWith('T4') || cellBlock.startsWith('TS1')) {
-            await fillRandomInput('#par1_1', 0, 10, false);
-            await fillRandomInput('#par2_1', 0, 5, false);
-            await fillRandomInput('#par1_2', 0, 10, false);
-            await fillRandomInput('#par2_2', 0, 5, false);
-            await fillRandomInput('#n1', 5, 50);
-            await fillRandomInput('#n2', 5, 50);
+        async function fillInput(selector, value, isInteger = true) {
+            const randomValue = generateRandomFromSeed(value, isInteger);
+            await page.$eval(selector, (element, val) => {
+                element.value = val;
+                const event = new Event('change', { bubbles: true });
+                element.dispatchEvent(event);
+            }, randomValue.toString());
+            console.log(`Set ${selector} to ${randomValue}`);
+            if (delayBetweenActions > 0) await delay(delayBetweenActions);
+            return randomValue;
+        }
 
+        let filledValues = {};
+
+        if (cellBlock.startsWith('T2') || cellBlock.startsWith('T3')) {
+            filledValues.M1 = await fillInput('#M1', seedValues.M1, true);
+            filledValues.S1 = await fillInput('#S1', seedValues.S1, false);
+            filledValues.M2 = await fillInput('#M2', seedValues.M2, true);
+            filledValues.S2 = await fillInput('#S2', seedValues.S2, false);
+            filledValues.Sk1 = await fillInput('#Sk1', seedValues.Sk1, false);
+            filledValues.Sk2 = await fillInput('#Sk2', seedValues.Sk2, false);
+            filledValues.n1 = await fillInput('#n1', seedValues.n1, true);
+            filledValues.n2 = await fillInput('#n2', seedValues.n2, true);
+        } else if (cellBlock.startsWith('T4') || cellBlock.startsWith('TS1')) {
+            filledValues.par1_1 = await fillInput('#par1_1', seedValues.par1_1 ?? 5, false);
+            filledValues.par2_1 = await fillInput('#par2_1', seedValues.par2_1 ?? 2.5, false);
+            filledValues.par1_2 = await fillInput('#par1_2', seedValues.par1_2 ?? 5, false);
+            filledValues.par2_2 = await fillInput('#par2_2', seedValues.par2_2 ?? 2.5, false);
+            filledValues.n1 = await fillInput('#n1', seedValues.n1 ?? 25, true);
+            filledValues.n2 = await fillInput('#n2', seedValues.n2 ?? 25, true);
+        
             const rdistValue = cellBlock.includes('1.1') ? 'rlnorm' :
                                cellBlock.includes('2.1') ? 'rpois' :
                                cellBlock.includes('3.1') ? 'rchisq' :
@@ -95,34 +107,30 @@ async function npboottprm_replext(options = {}) {
                                cellBlock.includes('5.1') ? 'rcauchy' :
                                cellBlock.includes('6.1') ? 'rchisq,rpois' :
                                'rlnorm,rchisq';
-            await page.$eval('#rdist', (element, val) => {
-                element.value = val;
-                const event = new Event('change', { bubbles: true });
-                element.dispatchEvent(event);
-            }, rdistValue);
-            console.log(`Set rdist to ${rdistValue}`);
+            filledValues.rdist = await fillInput('#rdist', seedValues.rdist ?? rdistValue, false);
+            console.log(`Set rdist to ${filledValues.rdist}`);
         } else if (cellBlock.startsWith('T5') || cellBlock.startsWith('T6')) {
-            await fillRandomInput('#M1', 1, 10);
-            await fillRandomInput('#S1', 0, 5, false);
-            await fillRandomInput('#M2', 1, 10);
-            await fillRandomInput('#S2', 0, 5, false);
-            await fillRandomInput('#Sk1', -2, 2, false);
-            await fillRandomInput('#Sk2', -2, 2, false);
-            await fillRandomInput('#correl', -1, 1, false);
-            await fillRandomInput('#n', 5, 50);
+            filledValues.M1 = await fillInput('#M1', seedValues.M1 ?? 5, true);
+            filledValues.S1 = await fillInput('#S1', seedValues.S1 ?? 2.5, false);
+            filledValues.M2 = await fillInput('#M2', seedValues.M2 ?? 5, true);
+            filledValues.S2 = await fillInput('#S2', seedValues.S2 ?? 2.5, false);
+            filledValues.Sk1 = await fillInput('#Sk1', seedValues.Sk1 ?? 0, false);
+            filledValues.Sk2 = await fillInput('#Sk2', seedValues.Sk2 ?? 0, false);
+            filledValues.correl = await fillInput('#correl', seedValues.correl ?? 0, false);
+            filledValues.n = await fillInput('#n', seedValues.n ?? 25, true);
         } else if (cellBlock.startsWith('TS2') || cellBlock.startsWith('TS3')) {
-            await fillRandomInput('#M1', 1, 10);
-            await fillRandomInput('#S1', 0, 5, false);
-            await fillRandomInput('#M2', 1, 10);
-            await fillRandomInput('#S2', 0, 5, false);
-            await fillRandomInput('#M3', 1, 10);
-            await fillRandomInput('#S3', 0, 5, false);
-            await fillRandomInput('#Sk1', -2, 2, false);
-            await fillRandomInput('#Sk2', -2, 2, false);
-            await fillRandomInput('#Sk3', -2, 2, false);
-            await fillRandomInput('#n1', 5, 50);
-            await fillRandomInput('#n2', 5, 50);
-            await fillRandomInput('#n3', 5, 50);
+            filledValues.M1 = await fillInput('#M1', seedValues.M1 ?? 5, true);
+            filledValues.S1 = await fillInput('#S1', seedValues.S1 ?? 2.5, false);
+            filledValues.M2 = await fillInput('#M2', seedValues.M2 ?? 5, true);
+            filledValues.S2 = await fillInput('#S2', seedValues.S2 ?? 2.5, false);
+            filledValues.M3 = await fillInput('#M3', seedValues.M3 ?? 5, true);
+            filledValues.S3 = await fillInput('#S3', seedValues.S3 ?? 2.5, false);
+            filledValues.Sk1 = await fillInput('#Sk1', seedValues.Sk1 ?? 0, false);
+            filledValues.Sk2 = await fillInput('#Sk2', seedValues.Sk2 ?? 0, false);
+            filledValues.Sk3 = await fillInput('#Sk3', seedValues.Sk3 ?? 0, false);
+            filledValues.n1 = await fillInput('#n1', seedValues.n1 ?? 25, true);
+            filledValues.n2 = await fillInput('#n2', seedValues.n2 ?? 25, true);
+            filledValues.n3 = await fillInput('#n3', seedValues.n3 ?? 25, true);
         }
 
         // Set user-defined parameters
@@ -141,7 +149,6 @@ async function npboottprm_replext(options = {}) {
         await page.click('#submit');
         console.log('Clicked Submit button');
         
-        // Scrolling to the top of the page
         await page.evaluate(() => {
             window.scrollTo(0, 0);
         });
@@ -149,6 +156,8 @@ async function npboottprm_replext(options = {}) {
         await delay(5000);
 
         console.log('Process completed successfully');
+
+        return filledValues;
     } catch (error) {
         console.error('An error occurred:', error);
     } finally {
@@ -156,7 +165,7 @@ async function npboottprm_replext(options = {}) {
     }
 }
 
-async function repeatedNpboottprm(options = {}) {
+async function repeatedNpboottprm(options = {}, initialSeedValues = {}) {
     const {
         iterations = Infinity,
         cellBlock = 'T2 Cell Block 1.1',
@@ -172,29 +181,42 @@ async function repeatedNpboottprm(options = {}) {
 
     let currentIteration = 0;
     let stopRequested = false;
+    let currentValues = { ...initialSeedValues };
 
     console.log(`Starting repeated simulations. Press Ctrl+C to stop.`);
 
     while (currentIteration < iterations && !stopRequested) {
         console.log(`\nStarting iteration ${currentIteration + 1}`);
+        console.log(`\nCurrent seed values are: ${JSON.stringify(currentValues, null, 2)}`);
         
         try {
-            await npboottprm_replext({
+            const filledValues = await npboottprm_replext({
                 cellBlock,
                 n_simulations,
                 nboot,
                 conf_level,
                 delayBetweenActions,
                 website
-            });
+            }, currentValues);
             
             currentIteration++;
             
-            // Check if it's time to download and analyze data
             if (currentIteration % downloadFrequency === 0) {
                 console.log(`Downloading and analyzing data...`);
                 const data = await downloadAndProcessCSV(website);
-                await analyzeData(data.slice(-simulationsToAnalyze));
+                const analysisResults = await analyzeData(data.slice(-simulationsToAnalyze));
+
+                // Here you would integrate LLM logic to update currentValues based on analysisResults
+                // For now, we'll just log the analysis results
+                console.log('Analysis results:', analysisResults);
+                
+                // Update values for next iteration after analysis
+                currentValues = { ...filledValues };
+                Object.keys(currentValues).forEach(key => {
+                    currentValues[key] = generateRandomFromSeed(currentValues[key], !key.startsWith('S') && !key.startsWith('Sk'));
+                });
+                console.log(`Updated seed values based on analysis: ${JSON.stringify(currentValues, null, 2)}`);
+                
             }
             
             if (currentIteration < iterations) {
@@ -220,10 +242,7 @@ async function downloadAndProcessCSV(website) {
     
     // Set up a listener for the download event
     const downloadPath = path.resolve('./downloads');
-    // await page._client.send('Page.setDownloadBehavior', {
-    //     behavior: 'allow',
-    //     downloadPath: downloadPath,
-    // });
+
     const client = await page.createCDPSession()
     await client.send('Page.setDownloadBehavior', {
         behavior: 'allow',
@@ -395,9 +414,9 @@ async function analyzeData(data) {
 
     console.log('Plots generated. Check your browser for the visualizations.');
 
-    // Calculate summary statistics (unchanged)
+    // Calculate summary statistics
     const summaryStats = methods.reduce((acc, method) => {
-        const values = processedData.map(d => d[method]);
+        const values = processedData.map(d => d[method]).filter(v => !isNaN(v));
         acc[method] = {
             mean: mean(values),
             median: median(values),
@@ -407,6 +426,12 @@ async function analyzeData(data) {
     }, {});
 
     console.log('Summary Statistics:', summaryStats);
+
+    // Return the analysis results
+    return {
+        summaryStats,
+        processedData
+    };
 }
 
 // Usage example
@@ -421,5 +446,14 @@ repeatedNpboottprm({
     delayBetweenIterations: 5000,
     downloadFrequency: 2,
     simulationsToAnalyze: 5
+}, {
+    // Initial seed values
+    M1: 7,
+    S1: 2.5,
+    M2: 9,
+    S2: 3,
+    Sk1: 0.5,
+    Sk2: -0.5,
+    n1: 15,
+    n2: 15
 });
-
