@@ -6,20 +6,11 @@ const { plot } = require('nodeplotlib');
 
 const delay = ms => new Promise(res => setTimeout(res, ms));
 
-function getRandomNumber(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-function getRandomFloat(min, max) {
-    return Math.random() * (max - min) + min;
-}
-
-// Modified function to generate random values based on seed
-function generateRandomFromSeed(seed, isInteger = true) {
+function generateRandomFromSeed(min, max, isInteger = true) {
     if (isInteger) {
-        return getRandomNumber(Math.floor(seed * 0.8), Math.ceil(seed * 1.2));
+        return Math.floor(Math.random() * (max - min + 1)) + min;
     } else {
-        return getRandomFloat(seed * 0.8, seed * 1.2);
+        return Math.random() * (max - min) + min;
     }
 }
 
@@ -69,8 +60,8 @@ async function npboottprm_replext(options = {}, seedValues = {}) {
             if (delayBetweenActions > 0) await delay(delayBetweenActions);
         }
 
-        async function fillInput(selector, value, isInteger = true) {
-            const randomValue = generateRandomFromSeed(value, isInteger);
+        async function fillInput(selector, min, max, isInteger = true) {
+            const randomValue = generateRandomFromSeed(min, max, isInteger);
             await page.$eval(selector, (element, val) => {
                 element.value = val;
                 const event = new Event('change', { bubbles: true });
@@ -84,21 +75,21 @@ async function npboottprm_replext(options = {}, seedValues = {}) {
         let filledValues = {};
 
         if (cellBlock.startsWith('T2') || cellBlock.startsWith('T3')) {
-            filledValues.M1 = await fillInput('#M1', seedValues.M1, true);
-            filledValues.S1 = await fillInput('#S1', seedValues.S1, false);
-            filledValues.M2 = await fillInput('#M2', seedValues.M2, true);
-            filledValues.S2 = await fillInput('#S2', seedValues.S2, false);
-            filledValues.Sk1 = await fillInput('#Sk1', seedValues.Sk1, false);
-            filledValues.Sk2 = await fillInput('#Sk2', seedValues.Sk2, false);
-            filledValues.n1 = await fillInput('#n1', seedValues.n1, true);
-            filledValues.n2 = await fillInput('#n2', seedValues.n2, true);
+            filledValues.M1 = await fillInput('#M1', seedValues.M1.min, seedValues.M1.max, true);
+            filledValues.S1 = await fillInput('#S1', seedValues.S1.min, seedValues.S1.max, false);
+            filledValues.M2 = await fillInput('#M2', seedValues.M2.min, seedValues.M2.max, true);
+            filledValues.S2 = await fillInput('#S2', seedValues.S2.min, seedValues.S2.max, false);
+            filledValues.Sk1 = await fillInput('#Sk1', seedValues.Sk1.min, seedValues.Sk1.max, false);
+            filledValues.Sk2 = await fillInput('#Sk2', seedValues.Sk2.min, seedValues.Sk2.max, false);
+            filledValues.n1 = await fillInput('#n1', seedValues.n1.min, seedValues.n1.max, true);
+            filledValues.n2 = await fillInput('#n2', seedValues.n2.min, seedValues.n2.max, true);
         } else if (cellBlock.startsWith('T4') || cellBlock.startsWith('TS1')) {
-            filledValues.par1_1 = await fillInput('#par1_1', seedValues.par1_1 ?? 5, false);
-            filledValues.par2_1 = await fillInput('#par2_1', seedValues.par2_1 ?? 2.5, false);
-            filledValues.par1_2 = await fillInput('#par1_2', seedValues.par1_2 ?? 5, false);
-            filledValues.par2_2 = await fillInput('#par2_2', seedValues.par2_2 ?? 2.5, false);
-            filledValues.n1 = await fillInput('#n1', seedValues.n1 ?? 25, true);
-            filledValues.n2 = await fillInput('#n2', seedValues.n2 ?? 25, true);
+            filledValues.par1_1 = await fillInput('#par1_1', seedValues.par1_1.min, seedValues.par1_1.max, false);
+            filledValues.par2_1 = await fillInput('#par2_1', seedValues.par2_1.min, seedValues.par2_1.max, false);
+            filledValues.par1_2 = await fillInput('#par1_2', seedValues.par1_2.min, seedValues.par1_2.max, false);
+            filledValues.par2_2 = await fillInput('#par2_2', seedValues.par2_2.min, seedValues.par2_2.max, false);
+            filledValues.n1 = await fillInput('#n1', seedValues.n1.min, seedValues.n1.max, true);
+            filledValues.n2 = await fillInput('#n2', seedValues.n2.min, seedValues.n2.max, true);
         
             const rdistValue = cellBlock.includes('1.1') ? 'rlnorm' :
                                cellBlock.includes('2.1') ? 'rpois' :
@@ -107,30 +98,30 @@ async function npboottprm_replext(options = {}, seedValues = {}) {
                                cellBlock.includes('5.1') ? 'rcauchy' :
                                cellBlock.includes('6.1') ? 'rchisq,rpois' :
                                'rlnorm,rchisq';
-            filledValues.rdist = await fillInput('#rdist', seedValues.rdist ?? rdistValue, false);
+            filledValues.rdist = await fillUserDefinedInput('#rdist', rdistValue);
             console.log(`Set rdist to ${filledValues.rdist}`);
         } else if (cellBlock.startsWith('T5') || cellBlock.startsWith('T6')) {
-            filledValues.M1 = await fillInput('#M1', seedValues.M1 ?? 5, true);
-            filledValues.S1 = await fillInput('#S1', seedValues.S1 ?? 2.5, false);
-            filledValues.M2 = await fillInput('#M2', seedValues.M2 ?? 5, true);
-            filledValues.S2 = await fillInput('#S2', seedValues.S2 ?? 2.5, false);
-            filledValues.Sk1 = await fillInput('#Sk1', seedValues.Sk1 ?? 0, false);
-            filledValues.Sk2 = await fillInput('#Sk2', seedValues.Sk2 ?? 0, false);
-            filledValues.correl = await fillInput('#correl', seedValues.correl ?? 0, false);
-            filledValues.n = await fillInput('#n', seedValues.n ?? 25, true);
+            filledValues.M1 = await fillInput('#M1', seedValues.M1.min, seedValues.M1.max, true);
+            filledValues.S1 = await fillInput('#S1', seedValues.S1.min, seedValues.S1.max, false);
+            filledValues.M2 = await fillInput('#M2', seedValues.M2.min, seedValues.M2.max, true);
+            filledValues.S2 = await fillInput('#S2', seedValues.S2.min, seedValues.S2.max, false);
+            filledValues.Sk1 = await fillInput('#Sk1', seedValues.Sk1.min, seedValues.Sk1.max, false);
+            filledValues.Sk2 = await fillInput('#Sk2', seedValues.Sk2.min, seedValues.Sk2.max, false);
+            filledValues.correl = await fillInput('#correl', seedValues.correl.min, seedValues.correl.max, false);
+            filledValues.n = await fillInput('#n', seedValues.n.min, seedValues.n.max, true);
         } else if (cellBlock.startsWith('TS2') || cellBlock.startsWith('TS3')) {
-            filledValues.M1 = await fillInput('#M1', seedValues.M1 ?? 5, true);
-            filledValues.S1 = await fillInput('#S1', seedValues.S1 ?? 2.5, false);
-            filledValues.M2 = await fillInput('#M2', seedValues.M2 ?? 5, true);
-            filledValues.S2 = await fillInput('#S2', seedValues.S2 ?? 2.5, false);
-            filledValues.M3 = await fillInput('#M3', seedValues.M3 ?? 5, true);
-            filledValues.S3 = await fillInput('#S3', seedValues.S3 ?? 2.5, false);
-            filledValues.Sk1 = await fillInput('#Sk1', seedValues.Sk1 ?? 0, false);
-            filledValues.Sk2 = await fillInput('#Sk2', seedValues.Sk2 ?? 0, false);
-            filledValues.Sk3 = await fillInput('#Sk3', seedValues.Sk3 ?? 0, false);
-            filledValues.n1 = await fillInput('#n1', seedValues.n1 ?? 25, true);
-            filledValues.n2 = await fillInput('#n2', seedValues.n2 ?? 25, true);
-            filledValues.n3 = await fillInput('#n3', seedValues.n3 ?? 25, true);
+            filledValues.M1 = await fillInput('#M1', seedValues.M1.min, seedValues.M1.max, true);
+            filledValues.S1 = await fillInput('#S1', seedValues.S1.min, seedValues.S1.max, false);
+            filledValues.M2 = await fillInput('#M2', seedValues.M2.min, seedValues.M2.max, true);
+            filledValues.S2 = await fillInput('#S2', seedValues.S2.min, seedValues.S2.max, false);
+            filledValues.M3 = await fillInput('#M3', seedValues.M3.min, seedValues.M3.max, true);
+            filledValues.S3 = await fillInput('#S3', seedValues.S3.min, seedValues.S3.max, false);
+            filledValues.Sk1 = await fillInput('#Sk1', seedValues.Sk1.min, seedValues.Sk1.max, false);
+            filledValues.Sk2 = await fillInput('#Sk2', seedValues.Sk2.min, seedValues.Sk2.max, false);
+            filledValues.Sk3 = await fillInput('#Sk3', seedValues.Sk3.min, seedValues.Sk3.max, false);
+            filledValues.n1 = await fillInput('#n1', seedValues.n1.min, seedValues.n1.max, true);
+            filledValues.n2 = await fillInput('#n2', seedValues.n2.min, seedValues.n2.max, true);
+            filledValues.n3 = await fillInput('#n3', seedValues.n3.min, seedValues.n3.max, true);
         }
 
         // Set user-defined parameters
@@ -204,19 +195,26 @@ async function repeatedNpboottprm(options = {}, initialSeedValues = {}) {
             if (currentIteration % downloadFrequency === 0) {
                 console.log(`Downloading and analyzing data...`);
                 const data = await downloadAndProcessCSV(website);
-                const analysisResults = await analyzeData(data.slice(-simulationsToAnalyze));
-
-                // Here you would integrate LLM logic to update currentValues based on analysisResults
-                // For now, we'll just log the analysis results
-                console.log('Analysis results:', analysisResults);
-                
+  
                 // Update values for next iteration after analysis
-                currentValues = { ...filledValues };
+                // This is where you'd implement logic to adjust the min/max ranges based on analysis
+                // For now, we'll just slightly adjust the ranges
                 Object.keys(currentValues).forEach(key => {
-                    currentValues[key] = generateRandomFromSeed(currentValues[key], !key.startsWith('S') && !key.startsWith('Sk'));
+                    if (key !== 'rdist') {  // rdist is not a numeric value
+                        const range = currentValues[key].max - currentValues[key].min;
+                        currentValues[key] = {
+                            min: Math.max(0, currentValues[key].min - range * 0.1),
+                            max: currentValues[key].max + range * 0.1
+                        };
+                    }
                 });
-                console.log(`Updated seed values based on analysis: ${JSON.stringify(currentValues, null, 2)}`);
-                
+
+                const analysisResults = await analyzeData(data.slice(-simulationsToAnalyze), currentValues);
+
+            // Here you would integrate LLM logic to update currentValues based on analysisResults
+            // For now, we'll just log the analysis results
+            console.log('Analysis results:', analysisResults);
+                console.log(`Updated seed value ranges based on analysis: ${JSON.stringify(currentValues, null, 2)}`);
             }
             
             if (currentIteration < iterations) {
@@ -292,7 +290,7 @@ const standardDeviation = (arr) => {
     return Math.sqrt(mean(squareDiffs));
 };
 
-async function analyzeData(data) {
+async function analyzeData(data, updatedSeedValues) {
     // Convert string values to numbers and calculate additional metrics
     const processedData = data.map((row, index) => ({
         rowIndex: index,
@@ -323,97 +321,6 @@ async function analyzeData(data) {
         ptt: 'star'
     };
 
-    // 1. Power vs Cohen's d
-    const powerVsCohensD = methods.map(method => ({
-        x: processedData.map(d => d.cohensD),
-        y: processedData.map(d => d[method]),
-        mode: 'markers',
-        type: 'scatter',
-        name: method.toUpperCase(),
-        marker: { 
-            symbol: methodShapes[method],
-            color: processedData.map(d => d.rowIndex),
-            colorscale: 'Viridis',
-            showscale: false  // Hide color scale
-        }
-    }));
-
-    // 2. n1 vs n2
-    const n1VsN2 = [{
-        x: processedData.map(d => d.n1),
-        y: processedData.map(d => d.n2),
-        mode: 'markers',
-        type: 'scatter',
-        marker: { 
-            color: processedData.map(d => d.rowIndex),
-            colorscale: 'Viridis',
-            showscale: true  // Show color scale
-        }
-    }];
-
-    // 3. SD1 vs SD2
-    const sd1VsSd2 = methods.map(method => ({
-        x: processedData.map(d => d.s1),
-        y: processedData.map(d => d.s2),
-        mode: 'markers',
-        type: 'scatter',
-        name: method.toUpperCase(),
-        showlegend: false,  // Hide legend
-        marker: { 
-            symbol: methodShapes[method],
-            color: processedData.map(d => d.rowIndex),
-            colorscale: 'Viridis',
-            showscale: false  // Hide color scale
-        }
-    }));
-
-    // 4. Skew1 vs Skew2
-    const skew1VsSkew2 = methods.map(method => ({
-        x: processedData.map(d => d.sk1),
-        y: processedData.map(d => d.sk2),
-        mode: 'markers',
-        type: 'scatter',
-        name: method.toUpperCase(),
-        showlegend: false,  // Hide legend
-        marker: { 
-            symbol: methodShapes[method],
-            color: processedData.map(d => d.rowIndex),
-            colorscale: 'Viridis',
-            showscale: false  // Hide color scale
-        }
-    }));
-
-    // Generate plots
-    plot(powerVsCohensD, {
-        title: 'Power vs. Cohen\'s d',
-        xaxis: { title: 'Cohen\'s d' },
-        yaxis: { title: 'Power', range: [0, 1] },
-        showlegend: true
-    });
-
-    plot(n1VsN2, {
-        title: 'Sample Size: n1 vs n2',
-        xaxis: { title: 'n1' },
-        yaxis: { title: 'n2' },
-        showlegend: false
-    });
-
-    plot(sd1VsSd2, {
-        title: 'Standard Deviation: SD1 vs SD2',
-        xaxis: { title: 'SD1' },
-        yaxis: { title: 'SD2' },
-        showlegend: false
-    });
-
-    plot(skew1VsSkew2, {
-        title: 'Skewness: Skew1 vs Skew2',
-        xaxis: { title: 'Skew1' },
-        yaxis: { title: 'Skew2' },
-        showlegend: false
-    });
-
-    console.log('Plots generated. Check your browser for the visualizations.');
-
     // Calculate summary statistics
     const summaryStats = methods.reduce((acc, method) => {
         const values = processedData.map(d => d[method]).filter(v => !isNaN(v));
@@ -425,7 +332,150 @@ async function analyzeData(data) {
         return acc;
     }, {});
 
-    console.log('Summary Statistics:', summaryStats);
+    // Create the four plots
+    const powerVsCohensD = methods.map(method => ({
+        x: processedData.map(d => d.cohensD),
+        y: processedData.map(d => d[method]),
+        mode: 'markers',
+        type: 'scatter',
+        name: method.toUpperCase(),
+        marker: { 
+            symbol: methodShapes[method],
+            size: 8,
+            color: processedData.map(d => d.rowIndex),
+            colorscale: 'Viridis',
+            showscale: false
+        }
+    }));
+
+    const n1VsN2 = [{
+        x: processedData.map(d => d.n1),
+        y: processedData.map(d => d.n2),
+        mode: 'markers',
+        type: 'scatter',
+        marker: { 
+            size: 8,
+            color: processedData.map(d => d.rowIndex),
+            colorscale: 'Viridis',
+            showscale: true
+        }
+    }];
+
+    const sd1VsSd2 = [{
+        x: processedData.map(d => d.s1),
+        y: processedData.map(d => d.s2),
+        mode: 'markers',
+        type: 'scatter',
+        marker: { 
+            size: 8,
+            color: processedData.map(d => d.rowIndex),
+            colorscale: 'Viridis',
+            showscale: false
+        }
+    }];
+
+    const skew1VsSkew2 = [{
+        x: processedData.map(d => d.sk1),
+        y: processedData.map(d => d.sk2),
+        mode: 'markers',
+        type: 'scatter',
+        marker: { 
+            size: 8,
+            color: processedData.map(d => d.rowIndex),
+            colorscale: 'Viridis',
+            showscale: false
+        }
+    }];
+
+    // Create layouts for each plot
+    const commonLayout = {
+        width: 500,
+        height: 500,
+        showlegend: false,
+        margin: { t: 50, r: 50, b: 50, l: 50 },
+        coloraxis: {colorscale: 'Viridis'},
+        hovermode: 'closest'
+    };
+
+    const powerLayout = {
+        ...commonLayout,
+        title: 'Power vs Cohen\'s d',
+        xaxis: { title: 'Cohen\'s d' },
+        yaxis: { title: 'Power', range: [0, 1] },
+        showlegend: true
+    };
+
+    const n1VsN2Layout = {
+        ...commonLayout,
+        title: 'Sample Size: n1 vs n2',
+        xaxis: { title: 'n1' },
+        yaxis: { title: 'n2' }
+    };
+
+    const sd1VsSd2Layout = {
+        ...commonLayout,
+        title: 'Standard Deviation: SD1 vs SD2',
+        xaxis: { title: 'SD1' },
+        yaxis: { title: 'SD2' }
+    };
+
+    const skew1VsSkew2Layout = {
+        ...commonLayout,
+        title: 'Skewness: Skew1 vs Skew2',
+        xaxis: { title: 'Skew1' },
+        yaxis: { title: 'Skew2' }
+    };
+
+    // Create two separate summary layouts
+    const summaryStatsLayout = {
+        width: 500,
+        height: 300,
+        title: 'Summary Statistics',
+        showlegend: false,
+        margin: { t: 50, r: 20, b: 20, l: 20 },
+        xaxis: { showgrid: false, zeroline: false, showticklabels: false },
+        yaxis: { showgrid: false, zeroline: false, showticklabels: false },
+        annotations: [{
+            text: `<pre>${JSON.stringify(summaryStats, null, 2)}</pre>`,
+            xref: 'paper',
+            yref: 'paper',
+            x: 0.5,
+            y: 0.5,
+            showarrow: false,
+            font: { size: 12, family: 'monospace' },
+            align: 'left'
+        }]
+    };
+
+    const nextValuesLayout = {
+        width: 500,
+        height: 300,
+        title: 'Next Iteration Values',
+        showlegend: false,
+        margin: { t: 50, r: 20, b: 20, l: 20 },
+        xaxis: { showgrid: false, zeroline: false, showticklabels: false },
+        yaxis: { showgrid: false, zeroline: false, showticklabels: false },
+        annotations: [{
+            text: `<pre>${JSON.stringify(updatedSeedValues, null, 2)}</pre>`,
+            xref: 'paper',
+            yref: 'paper',
+            x: 0.5,
+            y: 0.5,
+            showarrow: false,
+            font: { size: 12, family: 'monospace' },
+            align: 'left'
+        }]
+    };
+
+    // Generate the plots
+    plot([...powerVsCohensD], powerLayout);
+    plot(n1VsN2, n1VsN2Layout);
+    plot(sd1VsSd2, sd1VsSd2Layout);
+    plot(skew1VsSkew2, skew1VsSkew2Layout);
+    plot([], summaryStatsLayout);
+    plot([], nextValuesLayout);
+
+    console.log('Plots generated. Check your browser for the visualizations.');
 
     // Return the analysis results
     return {
@@ -447,13 +497,13 @@ repeatedNpboottprm({
     downloadFrequency: 2,
     simulationsToAnalyze: 5
 }, {
-    // Initial seed values
-    M1: 7,
-    S1: 2.5,
-    M2: 9,
-    S2: 3,
-    Sk1: 0.5,
-    Sk2: -0.5,
-    n1: 15,
-    n2: 15
-});
+    // Initial seed values with min and max
+    M1: { min: 5, max: 9 },
+    S1: { min: 2, max: 3 },
+    M2: { min: 7, max: 11 },
+    S2: { min: 2.5, max: 3.5 },
+    Sk1: { min: 0, max: 1 },
+    Sk2: { min: -1, max: 0 },
+    n1: { min: 10, max: 20 },
+    n2: { min: 10, max: 20 }
+})
