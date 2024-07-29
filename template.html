@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulation Results</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .plot { width: 100%; height: 500px; margin-bottom: 20px; }
+        .summary { white-space: pre-wrap; font-family: monospace; background-color: #f0f0f0; padding: 10px; border-radius: 5px; }
+        .iteration { margin-bottom: 40px; border-bottom: 1px solid #ccc; padding-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Simulation Results</h1>
+    <div id="content"></div>
+    <script>
+        function addNewContent(content) {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = content;
+            
+            // Append the content first
+            document.getElementById('content').appendChild(tempDiv);
+            
+            // Then execute any scripts
+            const scripts = tempDiv.getElementsByTagName('script');
+            for (let script of scripts) {
+                eval(script.innerHTML);
+            }
+        }
+        
+        setInterval(() => {
+            fetch('/new-content')
+                .then(response => response.text())
+                .then(newContent => {
+                    if (newContent) {
+                        console.log('Received new content:', newContent);
+                        addNewContent(newContent);
+                    } else {
+                        console.log('No new content received');
+                    }
+                })
+                .catch(error => console.error('Error fetching new content:', error));
+        }, 5000);
+    </script>
+</body>
+</html>

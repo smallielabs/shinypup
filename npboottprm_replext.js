@@ -2,7 +2,7 @@ const puppeteer = require('puppeteer');
 const fs = require('fs');
 const path = require('path');
 const csv = require('csv-parser');
-const { plot } = require('nodeplotlib');
+// const { plot } = require('nodeplotlib');
 
 const delay = ms => new Promise(res => setTimeout(res, ms));
 
@@ -332,150 +332,143 @@ async function analyzeData(data, updatedSeedValues) {
         return acc;
     }, {});
 
-    // Create the four plots
-    const powerVsCohensD = methods.map(method => ({
-        x: processedData.map(d => d.cohensD),
-        y: processedData.map(d => d[method]),
-        mode: 'markers',
-        type: 'scatter',
-        name: method.toUpperCase(),
-        marker: { 
-            symbol: methodShapes[method],
-            size: 8,
-            color: processedData.map(d => d.rowIndex),
-            colorscale: 'Viridis',
-            showscale: false
+    const powerVsCohensD = {
+        div: 'powerVsCohensD',
+        data: methods.map(method => ({
+            x: processedData.map(d => d.cohensD),
+            y: processedData.map(d => d[method]),
+            mode: 'markers',
+            type: 'scatter',
+            name: method.toUpperCase(),
+            marker: { 
+                symbol: methodShapes[method],
+                size: 8,
+                color: processedData.map(d => d.rowIndex),
+                colorscale: 'Viridis',
+                showscale: false
+            }
+        })),
+        layout: {
+            title: 'Power vs Cohen\'s d',
+            xaxis: { title: 'Cohen\'s d' },
+            yaxis: { title: 'Power', range: [0, 1] },
+            showlegend: true
         }
-    }));
-
-    const n1VsN2 = [{
-        x: processedData.map(d => d.n1),
-        y: processedData.map(d => d.n2),
-        mode: 'markers',
-        type: 'scatter',
-        marker: { 
-            size: 8,
-            color: processedData.map(d => d.rowIndex),
-            colorscale: 'Viridis',
-            showscale: true
+    };
+    
+    const n1VsN2 = {
+        div: 'n1VsN2',
+        data: [{
+            x: processedData.map(d => d.n1),
+            y: processedData.map(d => d.n2),
+            mode: 'markers',
+            type: 'scatter',
+            marker: { 
+                size: 8,
+                color: processedData.map(d => d.rowIndex),
+                colorscale: 'Viridis',
+                showscale: true
+            }
+        }],
+        layout: {
+            title: 'Sample Size: n1 vs n2',
+            xaxis: { title: 'n1' },
+            yaxis: { title: 'n2' }
         }
-    }];
-
-    const sd1VsSd2 = [{
-        x: processedData.map(d => d.s1),
-        y: processedData.map(d => d.s2),
-        mode: 'markers',
-        type: 'scatter',
-        marker: { 
-            size: 8,
-            color: processedData.map(d => d.rowIndex),
-            colorscale: 'Viridis',
-            showscale: false
+    };
+    
+    const sd1VsSd2 = {
+        div: 'sd1VsSd2',
+        data: [{
+            x: processedData.map(d => d.s1),
+            y: processedData.map(d => d.s2),
+            mode: 'markers',
+            type: 'scatter',
+            marker: { 
+                size: 8,
+                color: processedData.map(d => d.rowIndex),
+                colorscale: 'Viridis',
+                showscale: false
+            }
+        }],
+        layout: {
+            title: 'Standard Deviation: SD1 vs SD2',
+            xaxis: { title: 'SD1' },
+            yaxis: { title: 'SD2' }
         }
-    }];
-
-    const skew1VsSkew2 = [{
-        x: processedData.map(d => d.sk1),
-        y: processedData.map(d => d.sk2),
-        mode: 'markers',
-        type: 'scatter',
-        marker: { 
-            size: 8,
-            color: processedData.map(d => d.rowIndex),
-            colorscale: 'Viridis',
-            showscale: false
+    };
+    
+    const skew1VsSkew2 = {
+        div: 'skew1VsSkew2',
+        data: [{
+            x: processedData.map(d => d.sk1),
+            y: processedData.map(d => d.sk2),
+            mode: 'markers',
+            type: 'scatter',
+            marker: { 
+                size: 8,
+                color: processedData.map(d => d.rowIndex),
+                colorscale: 'Viridis',
+                showscale: false
+            }
+        }],
+        layout: {
+            title: 'Skewness: Skew1 vs Skew2',
+            xaxis: { title: 'Skew1' },
+            yaxis: { title: 'Skew2' }
         }
-    }];
-
-    // Create layouts for each plot
-    const commonLayout = {
-        width: 500,
-        height: 500,
-        showlegend: false,
-        margin: { t: 50, r: 50, b: 50, l: 50 },
-        coloraxis: {colorscale: 'Viridis'},
-        hovermode: 'closest'
     };
+    
+    // Generate HTML content for summary stats and next values
+    const summaryStatsHtml = `
+        <h3>Summary Statistics</h3>
+        <pre class="summary">${JSON.stringify(summaryStats, null, 2)}</pre>
+    `;
+    
+    const nextValuesHtml = `
+        <h3>Next Iteration Values</h3>
+        <pre class="summary">${JSON.stringify(updatedSeedValues, null, 2)}</pre>
+    `;
+    
+    // Generate unique IDs for each plot
+    const iterationId = Date.now();
+    const powerVsCohensDiv = `powerVsCohensD-${iterationId}`;
+    const n1VsN2Div = `n1VsN2-${iterationId}`;
+    const sd1VsSd2Div = `sd1VsSd2-${iterationId}`;
+    const skew1VsSkew2Div = `skew1VsSkew2-${iterationId}`;
 
-    const powerLayout = {
-        ...commonLayout,
-        title: 'Power vs Cohen\'s d',
-        xaxis: { title: 'Cohen\'s d' },
-        yaxis: { title: 'Power', range: [0, 1] },
-        showlegend: true
-    };
+    // Combine all HTML content
+    const htmlContent = `
+        <div class="iteration">
+            <h2>Iteration ${processedData[0].rowIndex + 1}</h2>
+            <div id="${powerVsCohensDiv}" class="plot"></div>
+            <div id="${n1VsN2Div}" class="plot"></div>
+            <div id="${sd1VsSd2Div}" class="plot"></div>
+            <div id="${skew1VsSkew2Div}" class="plot"></div>
+            <h3>Summary Statistics</h3>
+            <pre class="summary">${JSON.stringify(summaryStats, null, 2)}</pre>
+            <h3>Next Iteration Values</h3>
+            <pre class="summary">${JSON.stringify(updatedSeedValues, null, 2)}</pre>
+        </div>
+    `;
 
-    const n1VsN2Layout = {
-        ...commonLayout,
-        title: 'Sample Size: n1 vs n2',
-        xaxis: { title: 'n1' },
-        yaxis: { title: 'n2' }
-    };
+    // Create a separate script for Plotly calls
+    const plotlyScript = `
+        <script>
+        setTimeout(() => {
+            Plotly.newPlot('${powerVsCohensDiv}', ${JSON.stringify(powerVsCohensD.data)}, ${JSON.stringify(powerVsCohensD.layout)});
+            Plotly.newPlot('${n1VsN2Div}', ${JSON.stringify(n1VsN2.data)}, ${JSON.stringify(n1VsN2.layout)});
+            Plotly.newPlot('${sd1VsSd2Div}', ${JSON.stringify(sd1VsSd2.data)}, ${JSON.stringify(sd1VsSd2.layout)});
+            Plotly.newPlot('${skew1VsSkew2Div}', ${JSON.stringify(skew1VsSkew2.data)}, ${JSON.stringify(skew1VsSkew2.layout)});
+        }, 100);
+        </script>
+    `;
 
-    const sd1VsSd2Layout = {
-        ...commonLayout,
-        title: 'Standard Deviation: SD1 vs SD2',
-        xaxis: { title: 'SD1' },
-        yaxis: { title: 'SD2' }
-    };
+    // Append the new content to a file
+    fs.appendFileSync(path.join(__dirname, 'new-content.html'), htmlContent);
+    fs.appendFileSync(path.join(__dirname, 'new-content.html'), plotlyScript);
 
-    const skew1VsSkew2Layout = {
-        ...commonLayout,
-        title: 'Skewness: Skew1 vs Skew2',
-        xaxis: { title: 'Skew1' },
-        yaxis: { title: 'Skew2' }
-    };
-
-    // Create two separate summary layouts
-    const summaryStatsLayout = {
-        width: 500,
-        height: 300,
-        title: 'Summary Statistics',
-        showlegend: false,
-        margin: { t: 50, r: 20, b: 20, l: 20 },
-        xaxis: { showgrid: false, zeroline: false, showticklabels: false },
-        yaxis: { showgrid: false, zeroline: false, showticklabels: false },
-        annotations: [{
-            text: `<pre>${JSON.stringify(summaryStats, null, 2)}</pre>`,
-            xref: 'paper',
-            yref: 'paper',
-            x: 0.5,
-            y: 0.5,
-            showarrow: false,
-            font: { size: 12, family: 'monospace' },
-            align: 'left'
-        }]
-    };
-
-    const nextValuesLayout = {
-        width: 500,
-        height: 300,
-        title: 'Next Iteration Values',
-        showlegend: false,
-        margin: { t: 50, r: 20, b: 20, l: 20 },
-        xaxis: { showgrid: false, zeroline: false, showticklabels: false },
-        yaxis: { showgrid: false, zeroline: false, showticklabels: false },
-        annotations: [{
-            text: `<pre>${JSON.stringify(updatedSeedValues, null, 2)}</pre>`,
-            xref: 'paper',
-            yref: 'paper',
-            x: 0.5,
-            y: 0.5,
-            showarrow: false,
-            font: { size: 12, family: 'monospace' },
-            align: 'left'
-        }]
-    };
-
-    // Generate the plots
-    plot([...powerVsCohensD], powerLayout);
-    plot(n1VsN2, n1VsN2Layout);
-    plot(sd1VsSd2, sd1VsSd2Layout);
-    plot(skew1VsSkew2, skew1VsSkew2Layout);
-    plot([], summaryStatsLayout);
-    plot([], nextValuesLayout);
-
-    console.log('Plots generated. Check your browser for the visualizations.');
+    console.log('New content added to new-content.html');
 
     // Return the analysis results
     return {
