@@ -472,10 +472,19 @@ async function analyzeData(data, updatedSeedValues) {
     const sd1VsSd2Div = `sd1VsSd2-${iterationId}`;
     const skew1VsSkew2Div = `skew1VsSkew2-${iterationId}`;
 
+    // Add this new section for the LLM text box
+    const llmPlaceholderText = `
+        <div class="llm-text-box">
+            <h3>LLM Analysis</h3>
+            <p>This iteration is complete. Based on the results I suggest we run the simulation with the updated values presented below.</p>
+        </div>
+    `;
+
     // Combine all HTML content
     const htmlContent = `
         <div class="iteration">
             <h2>Iteration ${processedData[0].rowIndex + 1}</h2>
+            ${llmPlaceholderText}
             <div id="${powerVsCohensDiv}" class="plot"></div>
             <div id="${n1VsN2Div}" class="plot"></div>
             <div id="${sd1VsSd2Div}" class="plot"></div>
@@ -526,10 +535,10 @@ repeatedNpboottprm({
     // Initial seed values with min and max
     M1: { min: 5, max: 9 },
     S1: { min: 2, max: 3 },
-    M2: { min: 7, max: 11 },
-    S2: { min: 2.5, max: 3.5 },
-    Sk1: { min: 0, max: 1 },
-    Sk2: { min: -1, max: 0 },
-    n1: { min: 10, max: 20 },
-    n2: { min: 10, max: 20 }
+    M2: { min: 4, max: 10 },
+    S2: { min: 1.5, max: 3.5 },
+    Sk1: { min: -1, max: 1 },
+    Sk2: { min: -1, max: 1 },
+    n1: { min: 5, max: 12 },
+    n2: { min: 5, max: 12 }
 })
