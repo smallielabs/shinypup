@@ -170,6 +170,7 @@ async function repeatedNpboottprm(options = {}, initialSeedValues = {}) {
     } = options;
 
     let currentIteration = 0;
+    let analysisIteration = 0;  // track analysis iterations
     let stopRequested = false;
     let currentValues = { ...initialSeedValues };
 
@@ -194,6 +195,8 @@ async function repeatedNpboottprm(options = {}, initialSeedValues = {}) {
             if (currentIteration % downloadFrequency === 0) {
                 console.log(`Downloading and analyzing data...`);
                 const data = await downloadAndProcessCSV(website);
+
+                analysisIteration++;  // Increment the analysis iteration counter
   
                 // Update values for next iteration after analysis
                 // This is where you'd implement logic to adjust the min/max ranges based on analysis
@@ -208,7 +211,7 @@ async function repeatedNpboottprm(options = {}, initialSeedValues = {}) {
                     }
                 });
 
-                const analysisResults = await analyzeData(data.slice(-simulationsToAnalyze), currentValues);
+                const analysisResults = await analyzeData(data.slice(-simulationsToAnalyze), currentValues, analysisIteration, downloadFrequency);
 
             // Here you would integrate LLM logic to update currentValues based on analysisResults
             // For now, we'll just log the analysis results
@@ -289,7 +292,7 @@ const standardDeviation = (arr) => {
     return Math.sqrt(mean(squareDiffs));
 };
 
-async function analyzeData(data, updatedSeedValues) {
+async function analyzeData(data, updatedSeedValues, analysisIteration, downloadFrequency) {
     // Convert string values to numbers and calculate additional metrics
     const processedData = data.map((row, index) => ({
         rowIndex: index,
@@ -483,7 +486,7 @@ async function analyzeData(data, updatedSeedValues) {
     // Combine all HTML content
     const htmlContent = `
         <div class="iteration">
-            <h2>Iteration ${processedData[0].rowIndex + 1}</h2>
+            <h2>Analysis ${analysisIteration} (Iterations ${(analysisIteration - 1) * downloadFrequency + 1} - ${analysisIteration * downloadFrequency})</h2>
             ${llmPlaceholderText}
             <div id="${powerVsCohensDiv}" class="plot"></div>
             <div id="${n1VsN2Div}" class="plot"></div>
