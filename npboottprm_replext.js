@@ -2,7 +2,6 @@ const puppeteer = require('puppeteer');
 const fs = require('fs');
 const path = require('path');
 const csv = require('csv-parser');
-// const { plot } = require('nodeplotlib');
 
 const delay = ms => new Promise(res => setTimeout(res, ms));
 
@@ -422,12 +421,48 @@ async function analyzeData(data, updatedSeedValues) {
     // Generate HTML content for summary stats and next values
     const summaryStatsHtml = `
         <h3>Summary Statistics</h3>
-        <pre class="summary">${JSON.stringify(summaryStats, null, 2)}</pre>
+        <table class="summary-table">
+            <thead>
+                <tr>
+                    <th>Method</th>
+                    <th>Mean</th>
+                    <th>Median</th>
+                    <th>Standard Deviation</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${Object.entries(summaryStats).map(([method, stats]) => `
+                    <tr>
+                        <td>${method.toUpperCase()}</td>
+                        <td>${stats.mean.toFixed(4)}</td>
+                        <td>${stats.median.toFixed(4)}</td>
+                        <td>${stats.sd.toFixed(4)}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
     `;
     
     const nextValuesHtml = `
         <h3>Next Iteration Values</h3>
-        <pre class="summary">${JSON.stringify(updatedSeedValues, null, 2)}</pre>
+        <table class="summary-table">
+            <thead>
+                <tr>
+                    <th>Parameter</th>
+                    <th>Min</th>
+                    <th>Max</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${Object.entries(updatedSeedValues).map(([param, values]) => `
+                    <tr>
+                        <td>${param}</td>
+                        <td>${values.min.toFixed(4)}</td>
+                        <td>${values.max.toFixed(4)}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
     `;
     
     // Generate unique IDs for each plot
@@ -445,10 +480,8 @@ async function analyzeData(data, updatedSeedValues) {
             <div id="${n1VsN2Div}" class="plot"></div>
             <div id="${sd1VsSd2Div}" class="plot"></div>
             <div id="${skew1VsSkew2Div}" class="plot"></div>
-            <h3>Summary Statistics</h3>
-            <pre class="summary">${JSON.stringify(summaryStats, null, 2)}</pre>
-            <h3>Next Iteration Values</h3>
-            <pre class="summary">${JSON.stringify(updatedSeedValues, null, 2)}</pre>
+            ${summaryStatsHtml}
+            ${nextValuesHtml}
         </div>
     `;
 

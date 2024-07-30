@@ -5,30 +5,48 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Simulation Results</title>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.24/css/jquery.dataTables.css">
+    <script type="text/javascript" charset="utf8" src="https://code.jquery.com/jquery-3.5.1.js"></script>
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.js"></script>
     <style>
         body { font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
         .plot { width: 100%; height: 500px; margin-bottom: 20px; }
-        .summary { white-space: pre-wrap; font-family: monospace; background-color: #f0f0f0; padding: 10px; border-radius: 5px; }
+        .summary { margin-bottom: 20px; }
         .iteration { margin-bottom: 40px; border-bottom: 1px solid #ccc; padding-bottom: 20px; }
+        table.dataTable { width: 100% !important; margin-bottom: 20px !important; }
     </style>
 </head>
 <body>
-    <h1>Simulation Results</h1>
-    <div id="content"></div>
-    <script>
-        function addNewContent(content) {
-            const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = content;
-            
-            // Append the content first
-            document.getElementById('content').appendChild(tempDiv);
-            
-            // Then execute any scripts
-            const scripts = tempDiv.getElementsByTagName('script');
-            for (let script of scripts) {
-                eval(script.innerHTML);
+        <h1>Simulation Results</h1>
+        <div id="content"></div>
+        <script>
+            let tableCounter = 0;
+            function addNewContent(content) {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = content;
+                
+                // Append the content first
+                document.getElementById('content').appendChild(tempDiv);
+                
+                // Initialize DataTables with unique IDs
+                tempDiv.querySelectorAll('.summary-table').forEach((table) => {
+                    const tableId = `summary-table-${tableCounter++}`;
+                    table.id = tableId;
+                    if (!$.fn.DataTable.isDataTable(`#${tableId}`)) {
+                        $(`#${tableId}`).DataTable({
+                            paging: false,
+                            searching: false,
+                            info: false
+                        });
+                    }
+                });
+                
+                // Then execute any scripts
+                const scripts = tempDiv.getElementsByTagName('script');
+                for (let script of scripts) {
+                    eval(script.innerHTML);
+                }
             }
-        }
         
         setInterval(() => {
             fetch('/new-content')
