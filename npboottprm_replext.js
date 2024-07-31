@@ -1,9 +1,55 @@
+const dotenv = require('dotenv');
+dotenv.config();
 const puppeteer = require('puppeteer');
 const fs = require('fs');
 const path = require('path');
 const csv = require('csv-parser');
+const OpenAI = require('openai');
 
 const delay = ms => new Promise(res => setTimeout(res, ms));
+
+const openai = new OpenAI({
+    organization: "org-G1Za30U9Jziz5ivfbiUvidNo",
+    project: "proj_eI8KnGvRJfS7erjOZhKf1rXi",
+});
+
+async function getAIAnalysis(summaryStats, currentSeedValues) {
+    const prompt = `
+        You are an AI assistant specializing in statistical analysis. We are studying the 'npbtt' method, which is our main focus. The other methods (st, wt, wrst, ptt) are for comparison. We are looking to either maximize statistical power or better control the type 1 error rate for npbtt compared to other methods.
+
+        Here are the summary statistics of our latest simulation:
+        ${JSON.stringify(summaryStats, null, 2)}
+
+        These results were produced using the following seed values:
+        ${JSON.stringify(currentSeedValues, null, 2)}
+
+        The means in the summary statistics represent rejection rates.
+
+        Please provide:
+        1. A meaningful text-based summary of the results.
+        2. An explanation of how we should adjust the seed values for the next iteration.
+        3. A JSON object with suggested new seed values for the next analysis.
+
+        Format your response as a JSON object with keys: "summary", "explanation", and "newSeedValues".
+    `;
+
+    try {
+        const response = await openai.chat.completions.create({
+            model: "gpt-4",
+            messages: [
+                { role: "system", content: "You are a helpful assistant specialized in statistical analysis." },
+                { role: "user", content: prompt }
+            ],
+            temperature: 0.7,
+            max_tokens: 1000
+        });
+
+        return JSON.parse(response.choices[0].message.content);
+    } catch (error) {
+        console.error('Error in AI analysis:', error);
+        return null;
+    }
+}
 
 function generateRandomFromSeed(min, max, isInteger = true) {
     if (isInteger) {
@@ -197,26 +243,14 @@ async function repeatedNpboottprm(options = {}, initialSeedValues = {}) {
                 const data = await downloadAndProcessCSV(website);
 
                 analysisIteration++;  // Increment the analysis iteration counter
-  
-                // Update values for next iteration after analysis
-                // This is where you'd implement logic to adjust the min/max ranges based on analysis
-                // For now, we'll just slightly adjust the ranges
-                Object.keys(currentValues).forEach(key => {
-                    if (key !== 'rdist') {  // rdist is not a numeric value
-                        const range = currentValues[key].max - currentValues[key].min;
-                        currentValues[key] = {
-                            min: Math.max(0, currentValues[key].min - range * 0.1),
-                            max: currentValues[key].max + range * 0.1
-                        };
-                    }
-                });
 
                 const analysisResults = await analyzeData(data.slice(-simulationsToAnalyze), currentValues, analysisIteration, downloadFrequency);
 
-            // Here you would integrate LLM logic to update currentValues based on analysisResults
-            // For now, we'll just log the analysis results
-            console.log('Analysis results:', analysisResults);
-                console.log(`Updated seed value ranges based on analysis: ${JSON.stringify(currentValues, null, 2)}`);
+                // Update currentValues with AI-suggested new seed values
+                if (analysisResults.newSeedValues) {
+                    currentValues = analysisResults.newSeedValues;
+                    console.log(`Updated seed values based on AI analysis: ${JSON.stringify(currentValues, null, 2)}`);
+                }
             }
             
             if (currentIteration < iterations) {
@@ -292,7 +326,7 @@ const standardDeviation = (arr) => {
     return Math.sqrt(mean(squareDiffs));
 };
 
-async function analyzeData(data, updatedSeedValues, analysisIteration, downloadFrequency) {
+async function analyzeData(data, currentSeedValues, analysisIteration, downloadFrequency) {
     // Convert string values to numbers and calculate additional metrics
     const processedData = data.map((row, index) => ({
         rowIndex: index,
@@ -333,6 +367,9 @@ async function analyzeData(data, updatedSeedValues, analysisIteration, downloadF
         };
         return acc;
     }, {});
+
+    // Get AI analysis
+    const aiAnalysis = await getAIAnalysis(summaryStats, currentSeedValues);
 
     const powerVsCohensD = {
         div: 'powerVsCohensD',
@@ -445,9 +482,19 @@ async function analyzeData(data, updatedSeedValues, analysisIteration, downloadF
             </tbody>
         </table>
     `;
+
+    const aiAnalysisHtml = aiAnalysis ? `
+        <div class="llm-text-box">
+            <h3>AI Analysis</h3>
+            <h4>Summary:</h4>
+            <p>${aiAnalysis.summary}</p>
+            <h4>Explanation of New Seed Values:</h4>
+            <p>${aiAnalysis.explanation}</p>
+        </div>
+    ` : '<p>AI analysis not available.</p>';
     
-    const nextValuesHtml = `
-        <h3>Next Iteration Values</h3>
+    const nextValuesHtml = aiAnalysis ? `
+        <h3>Next Iteration Values (AI Suggested)</h3>
         <table class="summary-table">
             <thead>
                 <tr>
@@ -457,7 +504,7 @@ async function analyzeData(data, updatedSeedValues, analysisIteration, downloadF
                 </tr>
             </thead>
             <tbody>
-                ${Object.entries(updatedSeedValues).map(([param, values]) => `
+                ${Object.entries(aiAnalysis.newSeedValues).map(([param, values]) => `
                     <tr>
                         <td>${param}</td>
                         <td>${values.min.toFixed(4)}</td>
@@ -466,7 +513,7 @@ async function analyzeData(data, updatedSeedValues, analysisIteration, downloadF
                 `).join('')}
             </tbody>
         </table>
-    `;
+    ` : '';
     
     // Generate unique IDs for each plot
     const iterationId = Date.now();
@@ -475,19 +522,10 @@ async function analyzeData(data, updatedSeedValues, analysisIteration, downloadF
     const sd1VsSd2Div = `sd1VsSd2-${iterationId}`;
     const skew1VsSkew2Div = `skew1VsSkew2-${iterationId}`;
 
-    // Add this new section for the LLM text box
-    const llmPlaceholderText = `
-        <div class="llm-text-box">
-            <h3>LLM Analysis</h3>
-            <p>This iteration is complete. Based on the results I suggest we run the simulation with the updated values presented below.</p>
-        </div>
-    `;
-
-    // Combine all HTML content
     const htmlContent = `
         <div class="iteration">
             <h2>Analysis ${analysisIteration} (Iterations ${(analysisIteration - 1) * downloadFrequency + 1} - ${analysisIteration * downloadFrequency})</h2>
-            ${llmPlaceholderText}
+            ${aiAnalysisHtml}
             <div id="${powerVsCohensDiv}" class="plot"></div>
             <div id="${n1VsN2Div}" class="plot"></div>
             <div id="${sd1VsSd2Div}" class="plot"></div>
@@ -518,7 +556,8 @@ async function analyzeData(data, updatedSeedValues, analysisIteration, downloadF
     // Return the analysis results
     return {
         summaryStats,
-        processedData
+        processedData,
+        newSeedValues: aiAnalysis ? aiAnalysis.newSeedValues : null
     };
 }
 
