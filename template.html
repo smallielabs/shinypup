@@ -26,13 +26,35 @@
                     margin-top: 0;
                     color: #333;
                 }
+
+                .summary-table th,
+                .summary-table td {
+                    text-align: left;
+                    padding: 8px;
+                }
+                
+                .summary-table th {
+                    background-color: #f2f2f2;
+                }
+                
+                .summary-table {
+                    border-collapse: collapse;
+                    width: 100%;
+                }
+                
+                .summary-table, .summary-table th, .summary-table td {
+                    border: 1px solid #ddd;
+                }
             </style>
         </head>
         <body>
             <h1>Simulation Results</h1>
             <div id="content"></div>
+
         <script>
             let tableCounter = 0;
+            let iterationCount = 0;
+
             function addNewContent(content) {
                 const tempDiv = document.createElement('div');
                 tempDiv.innerHTML = content;
@@ -72,7 +94,7 @@
                     }
                 })
                 .catch(error => console.error('Error fetching new content:', error));
-        }, 5000);
+        }, 5000);    
     </script>
 </body>
 </html>

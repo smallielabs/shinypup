@@ -268,6 +268,10 @@ async function repeatedNpboottprm(options = {}, initialSeedValues = {}) {
 async function downloadAndProcessCSV(website) {
     const browser = await puppeteer.launch({ headless: false });
     const page = await browser.newPage();
+    await page.setViewport({
+        width: 1366,
+        height: 768,
+    });
     
     await page.goto(website);
     
@@ -563,7 +567,7 @@ async function analyzeData(data, currentSeedValues, analysisIteration, downloadF
 
 // Usage example
 repeatedNpboottprm({
-    iterations: 20,
+    iterations: 4,
     cellBlock: 'T2 Cell Block 1.1',
     n_simulations: 10,
     nboot: 1000,
@@ -572,7 +576,7 @@ repeatedNpboottprm({
     website: 'https://mightymetrika.shinyapps.io/npbreplext031/',
     delayBetweenIterations: 5000,
     downloadFrequency: 2,
-    simulationsToAnalyze: 5
+    simulationsToAnalyze: 2
 }, {
     // Initial seed values with min and max
     M1: { min: 5, max: 9 },
