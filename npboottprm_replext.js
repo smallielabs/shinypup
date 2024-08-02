@@ -13,6 +13,43 @@ const openai = new OpenAI({
     project: "proj_eI8KnGvRJfS7erjOZhKf1rXi",
 });
 
+async function generateIntroduction(options, initialSeedValues) {
+    const prompt = `
+        You are an AI assistant specializing in statistical analysis. We are about to start a series of simulations using the 'npbtt' method, which is our main focus. The other methods (st, wt, wrst, ptt) are for comparison.
+
+        Here are the parameters and options for our simulation:
+        ${JSON.stringify(options, null, 2)}
+
+        And here are the initial seed values:
+        ${JSON.stringify(initialSeedValues, null, 2)}
+
+        Please provide an introduction for our analysis that covers:
+        1. An overview of what we're trying to achieve with these simulations.
+        2. A brief explanation of the 'npbtt' method and why we're comparing it to other methods.
+        3. A description of the key parameters and options we're using, inferring their purpose from their names and values.
+        4. What we hope to learn from this series of simulations.
+
+        Format your response as HTML that can be directly inserted into a web page.
+    `;
+
+    try {
+        const response = await openai.chat.completions.create({
+            model: "gpt-4",
+            messages: [
+                { role: "system", content: "You are a helpful assistant specialized in statistical analysis." },
+                { role: "user", content: prompt }
+            ],
+            temperature: 0.7,
+            max_tokens: 1000
+        });
+
+        return response.choices[0].message.content;
+    } catch (error) {
+        console.error('Error generating introduction:', error);
+        return "<p>An error occurred while generating the introduction.</p>";
+    }
+}
+
 async function getAIAnalysis(summaryStats, currentSeedValues) {
     const prompt = `
         You are an AI assistant specializing in statistical analysis. We are studying the 'npbtt' method, which is our main focus. The other methods (st, wt, wrst, ptt) are for comparison. We are looking to either maximize statistical power or better control the type 1 error rate for npbtt compared to other methods.
@@ -222,6 +259,8 @@ async function repeatedNpboottprm(options = {}, initialSeedValues = {}) {
 
     console.log(`Starting repeated simulations. Press Ctrl+C to stop.`);
 
+    let introductionDisplayed = false;
+
     while (currentIteration < iterations && !stopRequested) {
         console.log(`\nStarting iteration ${currentIteration + 1}`);
         console.log(`\nCurrent seed values are: ${JSON.stringify(currentValues, null, 2)}`);
@@ -243,6 +282,18 @@ async function repeatedNpboottprm(options = {}, initialSeedValues = {}) {
                 const data = await downloadAndProcessCSV(website);
 
                 analysisIteration++;  // Increment the analysis iteration counter
+
+                if (!introductionDisplayed) {
+                    const introduction = await generateIntroduction(options, initialSeedValues);
+                    const introductionHtml = `
+                        <div class="introduction">
+                            <h2>Introduction to the Analysis</h2>
+                            ${introduction}
+                        </div>
+                    `;
+                    fs.appendFileSync(path.join(__dirname, 'new-content.html'), introductionHtml);
+                    introductionDisplayed = true;
+                }
 
                 const analysisResults = await analyzeData(data.slice(-simulationsToAnalyze), currentValues, analysisIteration, downloadFrequency);
 
