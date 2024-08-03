@@ -15,7 +15,7 @@ const openai = new OpenAI({
 
 async function generateIntroduction(options, initialSeedValues) {
     const prompt = `
-        You are an AI assistant specializing in statistical analysis. We are about to start a series of simulations using the 'npbtt' method, which is our main focus. The other methods (st, wt, wrst, ptt) are for comparison.
+        You are an AI assistant specializing in statistical analysis. We are about to start a series of simulations using the 'npbtt' method, which is our main focus. This method is based on the study by Dwivedi et al. (2017) titled "Analysis of small sample size studies using nonparametric bootstrap test with pooled resampling method."
 
         Here are the parameters and options for our simulation:
         ${JSON.stringify(options, null, 2)}
@@ -24,10 +24,11 @@ async function generateIntroduction(options, initialSeedValues) {
         ${JSON.stringify(initialSeedValues, null, 2)}
 
         Please provide an introduction for our analysis that covers:
-        1. An overview of what we're trying to achieve with these simulations.
-        2. A brief explanation of the 'npbtt' method and why we're comparing it to other methods.
-        3. A description of the key parameters and options we're using, inferring their purpose from their names and values.
-        4. What we hope to learn from this series of simulations.
+        1. An overview of what we're trying to achieve with these simulations, referencing the original study by Dwivedi et al.
+        2. A brief explanation of the 'npbtt' method, its advantages for small sample sizes, and why we're comparing it to other methods (st, wt, wrst, ptt).
+        3. A description of the key parameters and options we're using, inferring their purpose from their names and values, and how they relate to the original study.
+        4. What we hope to learn from this series of simulations and how it extends or validates the findings of Dwivedi et al.
+        5. The potential implications of this work for researchers dealing with small sample size studies.
 
         Format your response as HTML that can be directly inserted into a web page.
     `;
@@ -52,7 +53,7 @@ async function generateIntroduction(options, initialSeedValues) {
 
 async function getAIAnalysis(summaryStats, currentSeedValues) {
     const prompt = `
-        You are an AI assistant specializing in statistical analysis. We are studying the 'npbtt' method, which is our main focus. The other methods (st, wt, wrst, ptt) are for comparison. We are looking to either maximize statistical power or better control the type 1 error rate for npbtt compared to other methods.
+        You are an AI assistant specializing in statistical analysis. We are studying the 'npbtt' method, which is our main focus, based on the work of Dwivedi et al. (2017). The other methods (st, wt, wrst, ptt) are for comparison. We are looking to either maximize statistical power or better control the type 1 error rate for npbtt compared to other methods.
 
         Here are the summary statistics of our latest simulation:
         ${JSON.stringify(summaryStats, null, 2)}
@@ -63,11 +64,14 @@ async function getAIAnalysis(summaryStats, currentSeedValues) {
         The means in the summary statistics represent rejection rates.
 
         Please provide:
-        1. A meaningful text-based summary of the results.
-        2. An explanation of how we should adjust the seed values for the next iteration.
-        3. A JSON object with suggested new seed values for the next analysis.
+        1. A meaningful text-based summary of the results, comparing them to the findings of Dwivedi et al. (2017) where applicable.
+        2. An interpretation of how these results align with or differ from the original study's conclusions about the npbtt method's performance.
+        3. An explanation of how we should adjust the seed values for the next iteration, based on our current results and the goals of maximizing power or controlling type 1 error.
+        4. A discussion of the implications of these results for researchers working with small sample sizes.
+        5. Suggestions for further investigations or modifications to the simulation that could provide additional insights.
+        6. A JSON object with suggested new seed values for the next analysis.
 
-        Format your response as a JSON object with keys: "summary", "explanation", and "newSeedValues".
+        Format your response as a JSON object with keys: "summary", "comparison", "explanation", "implications", "suggestions", and "newSeedValues".
     `;
 
     try {
@@ -286,11 +290,10 @@ async function repeatedNpboottprm(options = {}, initialSeedValues = {}) {
                 if (!introductionDisplayed) {
                     const introduction = await generateIntroduction(options, initialSeedValues);
                     const introductionHtml = `
-                        <div class="introduction">
-                            <h2>Introduction to the Analysis</h2>
-                            ${introduction}
-                        </div>
-                    `;
+                    <div class="introduction">
+                        ${introduction}
+                    </div>
+                `;
                     fs.appendFileSync(path.join(__dirname, 'new-content.html'), introductionHtml);
                     introductionDisplayed = true;
                 }
