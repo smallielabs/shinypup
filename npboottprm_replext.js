@@ -1,104 +1,22 @@
 const dotenv = require('dotenv');
 dotenv.config();
-const puppeteer = require('puppeteer');
 const fs = require('fs');
 const path = require('path');
-const csv = require('csv-parser');
-const OpenAI = require('openai');
+const { generateIntroduction, getAIAnalysis } = require('./src/modules/openaiModule');
+const { generateRandomFromSeed, calculateSummaryStats } = require('./src/modules/mathModule');
+const {
+    launchBrowser,
+    createPage,
+    navigateToWebsite,
+    selectCellBlock,
+    fillUserDefinedInput,
+    fillInput,
+    runSimulation,
+    submitResults,
+    downloadAndProcessCSV
+} = require('./src/modules/puppeteerModule');
 
 const delay = ms => new Promise(res => setTimeout(res, ms));
-
-const openai = new OpenAI({
-    organization: "org-G1Za30U9Jziz5ivfbiUvidNo",
-    project: "proj_eI8KnGvRJfS7erjOZhKf1rXi",
-});
-
-async function generateIntroduction(options, initialSeedValues) {
-    const prompt = `
-        You are an AI assistant specializing in statistical analysis. We are about to start a series of simulations using the 'npbtt' method, which is our main focus. This method is based on the study by Dwivedi et al. (2017) titled "Analysis of small sample size studies using nonparametric bootstrap test with pooled resampling method."
-
-        Here are the parameters and options for our simulation:
-        ${JSON.stringify(options, null, 2)}
-
-        And here are the initial seed values:
-        ${JSON.stringify(initialSeedValues, null, 2)}
-
-        Please provide an introduction for our analysis that covers:
-        1. An overview of what we're trying to achieve with these simulations, referencing the original study by Dwivedi et al.
-        2. A brief explanation of the 'npbtt' method, its advantages for small sample sizes, and why we're comparing it to other methods (st, wt, wrst, ptt).
-        3. A description of the key parameters and options we're using, inferring their purpose from their names and values, and how they relate to the original study.
-        4. What we hope to learn from this series of simulations and how it extends or validates the findings of Dwivedi et al.
-        5. The potential implications of this work for researchers dealing with small sample size studies.
-
-        Format your response as HTML that can be directly inserted into a web page.
-    `;
-
-    try {
-        const response = await openai.chat.completions.create({
-            model: "gpt-4",
-            messages: [
-                { role: "system", content: "You are a helpful assistant specialized in statistical analysis." },
-                { role: "user", content: prompt }
-            ],
-            temperature: 0.7,
-            max_tokens: 1000
-        });
-
-        return response.choices[0].message.content;
-    } catch (error) {
-        console.error('Error generating introduction:', error);
-        return "<p>An error occurred while generating the introduction.</p>";
-    }
-}
-
-async function getAIAnalysis(summaryStats, currentSeedValues) {
-    const prompt = `
-        You are an AI assistant specializing in statistical analysis. We are studying the 'npbtt' method, which is our main focus, based on the work of Dwivedi et al. (2017). The other methods (st, wt, wrst, ptt) are for comparison. We are looking to either maximize statistical power or better control the type 1 error rate for npbtt compared to other methods.
-
-        Here are the summary statistics of our latest simulation:
-        ${JSON.stringify(summaryStats, null, 2)}
-
-        These results were produced using the following seed values:
-        ${JSON.stringify(currentSeedValues, null, 2)}
-
-        The means in the summary statistics represent rejection rates.
-
-        Please provide:
-        1. A meaningful text-based summary of the results, comparing them to the findings of Dwivedi et al. (2017) where applicable.
-        2. An interpretation of how these results align with or differ from the original study's conclusions about the npbtt method's performance.
-        3. An explanation of how we should adjust the seed values for the next iteration, based on our current results and the goals of maximizing power or controlling type 1 error.
-        4. A discussion of the implications of these results for researchers working with small sample sizes.
-        5. Suggestions for further investigations or modifications to the simulation that could provide additional insights.
-        6. A JSON object with suggested new seed values for the next analysis.
-
-        Format your response as a JSON object with keys: "summary", "comparison", "explanation", "implications", "suggestions", and "newSeedValues".
-    `;
-
-    try {
-        const response = await openai.chat.completions.create({
-            model: "gpt-4",
-            messages: [
-                { role: "system", content: "You are a helpful assistant specialized in statistical analysis." },
-                { role: "user", content: prompt }
-            ],
-            temperature: 0.7,
-            max_tokens: 1000
-        });
-
-        return JSON.parse(response.choices[0].message.content);
-    } catch (error) {
-        console.error('Error in AI analysis:', error);
-        return null;
-    }
-}
-
-function generateRandomFromSeed(min, max, isInteger = true) {
-    if (isInteger) {
-        return Math.floor(Math.random() * (max - min + 1)) + min;
-    } else {
-        return Math.random() * (max - min) + min;
-    }
-}
 
 async function npboottprm_replext(options = {}, seedValues = {}) {
     const {
@@ -110,73 +28,33 @@ async function npboottprm_replext(options = {}, seedValues = {}) {
         website = 'https://mightymetrika.shinyapps.io/npbreplext031/'
     } = options;
 
-    const browser = await puppeteer.launch({ 
-        headless: false,
-        args: ['--start-maximized'] });
-    const page = await browser.newPage();
-    await page.setViewport({
-        width: 1366,
-        height: 768,
-    });
+    const browser = await launchBrowser();
+    const page = await createPage(browser);
 
     try {
-        await page.goto(website);
-        await page.waitForSelector('#M1', { timeout: 20000 });
 
-        await page.click('.selectize-input');
-        await page.waitForSelector('.selectize-dropdown-content .option', { visible: true });
-        
-        const options = await page.$$('.selectize-dropdown-content .option');
-        for (let option of options) {
-            const text = await page.evaluate(el => el.textContent, option);
-            if (text.trim() === cellBlock) {
-                await option.click();
-                break;
-            }
-        }
-        console.log(`Selected Cell Block: ${cellBlock}`);
-
-        async function fillUserDefinedInput(selector, value) {
-            await page.$eval(selector, (element, val) => {
-                element.value = val;
-                const event = new Event('change', { bubbles: true });
-                element.dispatchEvent(event);
-            }, value.toString());
-            console.log(`Set ${selector} to ${value}`);
-            if (delayBetweenActions > 0) await delay(delayBetweenActions);
-        }
-
-        async function fillInput(selector, min, max, isInteger = true) {
-            const randomValue = generateRandomFromSeed(min, max, isInteger);
-            await page.$eval(selector, (element, val) => {
-                element.value = val;
-                const event = new Event('change', { bubbles: true });
-                element.dispatchEvent(event);
-            }, randomValue.toString());
-            console.log(`Set ${selector} to ${randomValue}`);
-            if (delayBetweenActions > 0) await delay(delayBetweenActions);
-            return randomValue;
-        }
+        await navigateToWebsite(page, website);
+        await selectCellBlock(page, cellBlock);
 
         let filledValues = {};
 
         if (cellBlock.startsWith('T2') || cellBlock.startsWith('T3')) {
-            filledValues.M1 = await fillInput('#M1', seedValues.M1.min, seedValues.M1.max, true);
-            filledValues.S1 = await fillInput('#S1', seedValues.S1.min, seedValues.S1.max, false);
-            filledValues.M2 = await fillInput('#M2', seedValues.M2.min, seedValues.M2.max, true);
-            filledValues.S2 = await fillInput('#S2', seedValues.S2.min, seedValues.S2.max, false);
-            filledValues.Sk1 = await fillInput('#Sk1', seedValues.Sk1.min, seedValues.Sk1.max, false);
-            filledValues.Sk2 = await fillInput('#Sk2', seedValues.Sk2.min, seedValues.Sk2.max, false);
-            filledValues.n1 = await fillInput('#n1', seedValues.n1.min, seedValues.n1.max, true);
-            filledValues.n2 = await fillInput('#n2', seedValues.n2.min, seedValues.n2.max, true);
+            filledValues.M1 = await fillInput(page, '#M1', generateRandomFromSeed(seedValues.M1.min, seedValues.M1.max, true), delayBetweenActions);
+            filledValues.S1 = await fillInput(page, '#S1', generateRandomFromSeed(seedValues.S1.min, seedValues.S1.max, false), delayBetweenActions);
+            filledValues.M2 = await fillInput(page, '#M2', generateRandomFromSeed(seedValues.M2.min, seedValues.M2.max, true), delayBetweenActions);
+            filledValues.S2 = await fillInput(page, '#S2', generateRandomFromSeed(seedValues.S2.min, seedValues.S2.max, false), delayBetweenActions);
+            filledValues.Sk1 = await fillInput(page, '#Sk1', generateRandomFromSeed(seedValues.Sk1.min, seedValues.Sk1.max, false), delayBetweenActions);
+            filledValues.Sk2 = await fillInput(page, '#Sk2', generateRandomFromSeed(seedValues.Sk2.min, seedValues.Sk2.max, false), delayBetweenActions);
+            filledValues.n1 = await fillInput(page, '#n1', generateRandomFromSeed(seedValues.n1.min, seedValues.n1.max, true), delayBetweenActions);
+            filledValues.n2 = await fillInput(page, '#n2', generateRandomFromSeed(seedValues.n2.min, seedValues.n2.max, true), delayBetweenActions);
         } else if (cellBlock.startsWith('T4') || cellBlock.startsWith('TS1')) {
-            filledValues.par1_1 = await fillInput('#par1_1', seedValues.par1_1.min, seedValues.par1_1.max, false);
-            filledValues.par2_1 = await fillInput('#par2_1', seedValues.par2_1.min, seedValues.par2_1.max, false);
-            filledValues.par1_2 = await fillInput('#par1_2', seedValues.par1_2.min, seedValues.par1_2.max, false);
-            filledValues.par2_2 = await fillInput('#par2_2', seedValues.par2_2.min, seedValues.par2_2.max, false);
-            filledValues.n1 = await fillInput('#n1', seedValues.n1.min, seedValues.n1.max, true);
-            filledValues.n2 = await fillInput('#n2', seedValues.n2.min, seedValues.n2.max, true);
-        
+            filledValues.par1_1 = await fillInput(page, '#par1_1', generateRandomFromSeed(seedValues.par1_1.min, seedValues.par1_1.max, false), delayBetweenActions);
+            filledValues.par2_1 = await fillInput(page, '#par2_1', generateRandomFromSeed(seedValues.par2_1.min, seedValues.par2_1.max, false), delayBetweenActions);
+            filledValues.par1_2 = await fillInput(page, '#par1_2', generateRandomFromSeed(seedValues.par1_2.min, seedValues.par1_2.max, false), delayBetweenActions);
+            filledValues.par2_2 = await fillInput(page, '#par2_2', generateRandomFromSeed(seedValues.par2_2.min, seedValues.par2_2.max, false), delayBetweenActions);
+            filledValues.n1 = await fillInput(page, '#n1', generateRandomFromSeed(seedValues.n1.min, seedValues.n1.max, true), delayBetweenActions);
+            filledValues.n2 = await fillInput(page, '#n2', generateRandomFromSeed(seedValues.n2.min, seedValues.n2.max, true), delayBetweenActions);
+            
             const rdistValue = cellBlock.includes('1.1') ? 'rlnorm' :
                                cellBlock.includes('2.1') ? 'rpois' :
                                cellBlock.includes('3.1') ? 'rchisq' :
@@ -184,53 +62,42 @@ async function npboottprm_replext(options = {}, seedValues = {}) {
                                cellBlock.includes('5.1') ? 'rcauchy' :
                                cellBlock.includes('6.1') ? 'rchisq,rpois' :
                                'rlnorm,rchisq';
-            filledValues.rdist = await fillUserDefinedInput('#rdist', rdistValue);
-            console.log(`Set rdist to ${filledValues.rdist}`);
+            await fillUserDefinedInput(page, '#rdist', rdistValue, delayBetweenActions);
+            filledValues.rdist = rdistValue;
         } else if (cellBlock.startsWith('T5') || cellBlock.startsWith('T6')) {
-            filledValues.M1 = await fillInput('#M1', seedValues.M1.min, seedValues.M1.max, true);
-            filledValues.S1 = await fillInput('#S1', seedValues.S1.min, seedValues.S1.max, false);
-            filledValues.M2 = await fillInput('#M2', seedValues.M2.min, seedValues.M2.max, true);
-            filledValues.S2 = await fillInput('#S2', seedValues.S2.min, seedValues.S2.max, false);
-            filledValues.Sk1 = await fillInput('#Sk1', seedValues.Sk1.min, seedValues.Sk1.max, false);
-            filledValues.Sk2 = await fillInput('#Sk2', seedValues.Sk2.min, seedValues.Sk2.max, false);
-            filledValues.correl = await fillInput('#correl', seedValues.correl.min, seedValues.correl.max, false);
-            filledValues.n = await fillInput('#n', seedValues.n.min, seedValues.n.max, true);
+            filledValues.M1 = await fillInput(page, '#M1', generateRandomFromSeed(seedValues.M1.min, seedValues.M1.max, true), delayBetweenActions);
+            filledValues.S1 = await fillInput(page, '#S1', generateRandomFromSeed(seedValues.S1.min, seedValues.S1.max, false), delayBetweenActions);
+            filledValues.M2 = await fillInput(page, '#M2', generateRandomFromSeed(seedValues.M2.min, seedValues.M2.max, true), delayBetweenActions);
+            filledValues.S2 = await fillInput(page, '#S2', generateRandomFromSeed(seedValues.S2.min, seedValues.S2.max, false), delayBetweenActions);
+            filledValues.Sk1 = await fillInput(page, '#Sk1', generateRandomFromSeed(seedValues.Sk1.min, seedValues.Sk1.max, false), delayBetweenActions);
+            filledValues.Sk2 = await fillInput(page, '#Sk2', generateRandomFromSeed(seedValues.Sk2.min, seedValues.Sk2.max, false), delayBetweenActions);
+            filledValues.correl = await fillInput(page, '#correl', generateRandomFromSeed(seedValues.correl.min, seedValues.correl.max, false), delayBetweenActions);
+            filledValues.n = await fillInput(page, '#n', generateRandomFromSeed(seedValues.n.min, seedValues.n.max, true), delayBetweenActions);
         } else if (cellBlock.startsWith('TS2') || cellBlock.startsWith('TS3')) {
-            filledValues.M1 = await fillInput('#M1', seedValues.M1.min, seedValues.M1.max, true);
-            filledValues.S1 = await fillInput('#S1', seedValues.S1.min, seedValues.S1.max, false);
-            filledValues.M2 = await fillInput('#M2', seedValues.M2.min, seedValues.M2.max, true);
-            filledValues.S2 = await fillInput('#S2', seedValues.S2.min, seedValues.S2.max, false);
-            filledValues.M3 = await fillInput('#M3', seedValues.M3.min, seedValues.M3.max, true);
-            filledValues.S3 = await fillInput('#S3', seedValues.S3.min, seedValues.S3.max, false);
-            filledValues.Sk1 = await fillInput('#Sk1', seedValues.Sk1.min, seedValues.Sk1.max, false);
-            filledValues.Sk2 = await fillInput('#Sk2', seedValues.Sk2.min, seedValues.Sk2.max, false);
-            filledValues.Sk3 = await fillInput('#Sk3', seedValues.Sk3.min, seedValues.Sk3.max, false);
-            filledValues.n1 = await fillInput('#n1', seedValues.n1.min, seedValues.n1.max, true);
-            filledValues.n2 = await fillInput('#n2', seedValues.n2.min, seedValues.n2.max, true);
-            filledValues.n3 = await fillInput('#n3', seedValues.n3.min, seedValues.n3.max, true);
+            filledValues.M1 = await fillInput(page, '#M1', generateRandomFromSeed(seedValues.M1.min, seedValues.M1.max, true), delayBetweenActions);
+            filledValues.S1 = await fillInput(page, '#S1', generateRandomFromSeed(seedValues.S1.min, seedValues.S1.max, false), delayBetweenActions);
+            filledValues.M2 = await fillInput(page, '#M2', generateRandomFromSeed(seedValues.M2.min, seedValues.M2.max, true), delayBetweenActions);
+            filledValues.S2 = await fillInput(page, '#S2', generateRandomFromSeed(seedValues.S2.min, seedValues.S2.max, false), delayBetweenActions);
+            filledValues.M3 = await fillInput(page, '#M3', generateRandomFromSeed(seedValues.M3.min, seedValues.M3.max, true), delayBetweenActions);
+            filledValues.S3 = await fillInput(page, '#S3', generateRandomFromSeed(seedValues.S3.min, seedValues.S3.max, false), delayBetweenActions);
+            filledValues.Sk1 = await fillInput(page, '#Sk1', generateRandomFromSeed(seedValues.Sk1.min, seedValues.Sk1.max, false), delayBetweenActions);
+            filledValues.Sk2 = await fillInput(page, '#Sk2', generateRandomFromSeed(seedValues.Sk2.min, seedValues.Sk2.max, false), delayBetweenActions);
+            filledValues.Sk3 = await fillInput(page, '#Sk3', generateRandomFromSeed(seedValues.Sk3.min, seedValues.Sk3.max, false), delayBetweenActions);
+            filledValues.n1 = await fillInput(page, '#n1', generateRandomFromSeed(seedValues.n1.min, seedValues.n1.max, true), delayBetweenActions);
+            filledValues.n2 = await fillInput(page, '#n2', generateRandomFromSeed(seedValues.n2.min, seedValues.n2.max, true), delayBetweenActions);
+            filledValues.n3 = await fillInput(page, '#n3', generateRandomFromSeed(seedValues.n3.min, seedValues.n3.max, true), delayBetweenActions);
         }
 
         // Set user-defined parameters
-        await fillUserDefinedInput('#n_simulations', n_simulations);
-        await fillUserDefinedInput('#nboot', nboot);
-        //await fillUserDefinedInput('#conf.level', conf_level);
+        await fillUserDefinedInput(page, '#n_simulations', n_simulations, delayBetweenActions);
+        await fillUserDefinedInput(page, '#nboot', nboot, delayBetweenActions);
+        //await fillUserDefinedInput(page, '#conf.level', conf_level, delayBetweenActions);
 
         if (delayBetweenActions > 0) await delay(2000);
 
-        await page.click('#runSim');
-        console.log('Clicked Run Simulation button');
-
-        await page.waitForSelector('#DataTables_Table_1', { timeout: 100000 });
-        console.log('Simulation table loaded');
-
-        await page.click('#submit');
-        console.log('Clicked Submit button');
-        
-        await page.evaluate(() => {
-            window.scrollTo(0, 0);
-        });
-
-        await delay(5000);
+        // await delay(5000);
+        await runSimulation(page);
+        await submitResults(page);
 
         console.log('Process completed successfully');
 
@@ -270,14 +137,7 @@ async function repeatedNpboottprm(options = {}, initialSeedValues = {}) {
         console.log(`\nCurrent seed values are: ${JSON.stringify(currentValues, null, 2)}`);
         
         try {
-            const filledValues = await npboottprm_replext({
-                cellBlock,
-                n_simulations,
-                nboot,
-                conf_level,
-                delayBetweenActions,
-                website
-            }, currentValues);
+            const filledValues = await npboottprm_replext(options, currentValues);
             
             currentIteration++;
             
@@ -288,7 +148,26 @@ async function repeatedNpboottprm(options = {}, initialSeedValues = {}) {
                 analysisIteration++;  // Increment the analysis iteration counter
 
                 if (!introductionDisplayed) {
-                    const introduction = await generateIntroduction(options, initialSeedValues);
+
+                    const introductionPrompt = `
+                    You are an AI assistant specializing in statistical analysis. We are about to start a series of simulations using the 'npbtt' method, which is our main focus. This method is based on the study by Dwivedi et al. (2017) titled "Analysis of small sample size studies using nonparametric bootstrap test with pooled resampling method."
+        
+                    Here are the parameters and options for our simulation:
+                    ${JSON.stringify(options, null, 2)}
+        
+                    And here are the initial seed values:
+                    ${JSON.stringify(initialSeedValues, null, 2)}
+        
+                    Please provide an introduction for our analysis that covers:
+                    1. An overview of what we're trying to achieve with these simulations, referencing the original study by Dwivedi et al.
+                    2. A brief explanation of the 'npbtt' method, its advantages for small sample sizes, and why we're comparing it to other methods (st, wt, wrst, ptt).
+                    3. A description of the key parameters and options we're using, inferring their purpose from their names and values, and how they relate to the original study.
+                    4. What we hope to learn from this series of simulations and how it extends or validates the findings of Dwivedi et al.
+                    5. The potential implications of this work for researchers dealing with small sample size studies.
+        
+                    Format your response as HTML that can be directly inserted into a web page.
+                `;
+                    const introduction = await generateIntroduction(options, initialSeedValues, introductionPrompt);
                     const introductionHtml = `
                     <div class="introduction">
                         ${introduction}
@@ -319,71 +198,6 @@ async function repeatedNpboottprm(options = {}, initialSeedValues = {}) {
     console.log(`Completed ${currentIteration} iterations.`);
 
 }
-
-async function downloadAndProcessCSV(website) {
-    const browser = await puppeteer.launch({ headless: false });
-    const page = await browser.newPage();
-    await page.setViewport({
-        width: 1366,
-        height: 768,
-    });
-    
-    await page.goto(website);
-    
-    // Wait for the download button to be available
-    await page.waitForSelector('#downloadBtn');
-    
-    // Set up a listener for the download event
-    const downloadPath = path.resolve('./downloads');
-
-    const client = await page.createCDPSession()
-    await client.send('Page.setDownloadBehavior', {
-        behavior: 'allow',
-        downloadPath
-    })
-
-    // Delay before clicking download button
-    await delay(5000);
-    
-    // Click the download button
-    await page.click('#downloadBtn');
-    
-    // Wait for the download to complete (you may need to adjust the delay)
-    await delay(10000);
-    
-    await browser.close();
-    
-    // Find the most recently downloaded file
-    const files = fs.readdirSync(downloadPath);
-    const mostRecentFile = files.reduce((prev, current) => {
-        return fs.statSync(path.join(downloadPath, prev)).mtime > fs.statSync(path.join(downloadPath, current)).mtime ? prev : current;
-    });
-    
-    // Read and parse the CSV file
-    const results = [];
-    return new Promise((resolve, reject) => {
-        fs.createReadStream(path.join(downloadPath, mostRecentFile))
-            .pipe(csv())
-            .on('data', (data) => results.push(data))
-            .on('end', () => {
-                resolve(results);
-            })
-            .on('error', reject);
-    });
-}
-
-// Helper functions for statistics (unchanged)
-const mean = (arr) => arr.reduce((a, b) => a + b, 0) / arr.length;
-const median = (arr) => {
-    const sorted = [...arr].sort((a, b) => a - b);
-    const mid = Math.floor(sorted.length / 2);
-    return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
-};
-const standardDeviation = (arr) => {
-    const avg = mean(arr);
-    const squareDiffs = arr.map(value => Math.pow(value - avg, 2));
-    return Math.sqrt(mean(squareDiffs));
-};
 
 async function analyzeData(data, currentSeedValues, analysisIteration, downloadFrequency) {
     // Convert string values to numbers and calculate additional metrics
@@ -416,19 +230,32 @@ async function analyzeData(data, currentSeedValues, analysisIteration, downloadF
         ptt: 'star'
     };
 
-    // Calculate summary statistics
-    const summaryStats = methods.reduce((acc, method) => {
-        const values = processedData.map(d => d[method]).filter(v => !isNaN(v));
-        acc[method] = {
-            mean: mean(values),
-            median: median(values),
-            sd: standardDeviation(values)
-        };
-        return acc;
-    }, {});
+    // Calculate summary statistics using the mathModule
+    const summaryStats = calculateSummaryStats(processedData, methods);
 
     // Get AI analysis
-    const aiAnalysis = await getAIAnalysis(summaryStats, currentSeedValues);
+    const aiAnalysisPrompt = `
+    You are an AI assistant specializing in statistical analysis. We are studying the 'npbtt' method, which is our main focus, based on the work of Dwivedi et al. (2017). The other methods (st, wt, wrst, ptt) are for comparison. We are looking to either maximize statistical power or better control the type 1 error rate for npbtt compared to other methods.
+
+    Here are the summary statistics of our latest simulation:
+    ${JSON.stringify(summaryStats, null, 2)}
+
+    These results were produced using the following seed values:
+    ${JSON.stringify(currentSeedValues, null, 2)}
+
+    The means in the summary statistics represent rejection rates.
+
+    Please provide:
+    1. A meaningful text-based summary of the results, comparing them to the findings of Dwivedi et al. (2017) where applicable.
+    2. An interpretation of how these results align with or differ from the original study's conclusions about the npbtt method's performance.
+    3. An explanation of how we should adjust the seed values for the next iteration, based on our current results and the goals of maximizing power or controlling type 1 error.
+    4. A discussion of the implications of these results for researchers working with small sample sizes.
+    5. Suggestions for further investigations or modifications to the simulation that could provide additional insights.
+    6. A JSON object with suggested new seed values for the next analysis.
+
+    Format your response as a JSON object with keys: "summary", "comparison", "explanation", "implications", "suggestions", and "newSeedValues".
+    `;
+    const aiAnalysis = await getAIAnalysis(summaryStats, currentSeedValues, aiAnalysisPrompt);
 
     const powerVsCohensD = {
         div: 'powerVsCohensD',
