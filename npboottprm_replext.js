@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { generateIntroduction, getAIAnalysis } = require('./src/modules/openaiModule');
 const { generateRandomFromSeed, calculateSummaryStats } = require('./src/modules/mathModule');
+const { createScatterPlot, createComparisonPlot } = require('./src/modules/plotModule');
 const {
     launchBrowser,
     createPage,
@@ -256,93 +257,6 @@ async function analyzeData(data, currentSeedValues, analysisIteration, downloadF
     Format your response as a JSON object with keys: "summary", "comparison", "explanation", "implications", "suggestions", and "newSeedValues".
     `;
     const aiAnalysis = await getAIAnalysis(summaryStats, currentSeedValues, aiAnalysisPrompt);
-
-    const powerVsCohensD = {
-        div: 'powerVsCohensD',
-        data: methods.map(method => ({
-            x: processedData.map(d => d.cohensD),
-            y: processedData.map(d => d[method]),
-            mode: 'markers',
-            type: 'scatter',
-            name: method.toUpperCase(),
-            marker: { 
-                symbol: methodShapes[method],
-                size: 8,
-                color: processedData.map(d => d.rowIndex),
-                colorscale: 'Viridis',
-                showscale: false
-            }
-        })),
-        layout: {
-            title: 'Power vs Cohen\'s d',
-            xaxis: { title: 'Cohen\'s d' },
-            yaxis: { title: 'Power', range: [0, 1] },
-            showlegend: true
-        }
-    };
-    
-    const n1VsN2 = {
-        div: 'n1VsN2',
-        data: [{
-            x: processedData.map(d => d.n1),
-            y: processedData.map(d => d.n2),
-            mode: 'markers',
-            type: 'scatter',
-            marker: { 
-                size: 8,
-                color: processedData.map(d => d.rowIndex),
-                colorscale: 'Viridis',
-                showscale: true
-            }
-        }],
-        layout: {
-            title: 'Sample Size: n1 vs n2',
-            xaxis: { title: 'n1' },
-            yaxis: { title: 'n2' }
-        }
-    };
-    
-    const sd1VsSd2 = {
-        div: 'sd1VsSd2',
-        data: [{
-            x: processedData.map(d => d.s1),
-            y: processedData.map(d => d.s2),
-            mode: 'markers',
-            type: 'scatter',
-            marker: { 
-                size: 8,
-                color: processedData.map(d => d.rowIndex),
-                colorscale: 'Viridis',
-                showscale: false
-            }
-        }],
-        layout: {
-            title: 'Standard Deviation: SD1 vs SD2',
-            xaxis: { title: 'SD1' },
-            yaxis: { title: 'SD2' }
-        }
-    };
-    
-    const skew1VsSkew2 = {
-        div: 'skew1VsSkew2',
-        data: [{
-            x: processedData.map(d => d.sk1),
-            y: processedData.map(d => d.sk2),
-            mode: 'markers',
-            type: 'scatter',
-            marker: { 
-                size: 8,
-                color: processedData.map(d => d.rowIndex),
-                colorscale: 'Viridis',
-                showscale: false
-            }
-        }],
-        layout: {
-            title: 'Skewness: Skew1 vs Skew2',
-            xaxis: { title: 'Skew1' },
-            yaxis: { title: 'Skew2' }
-        }
-    };
     
     // Generate HTML content for summary stats and next values
     const summaryStatsHtml = `
@@ -400,22 +314,61 @@ async function analyzeData(data, currentSeedValues, analysisIteration, downloadF
             </tbody>
         </table>
     ` : '';
-    
-    // Generate unique IDs for each plot
-    const iterationId = Date.now();
-    const powerVsCohensDiv = `powerVsCohensD-${iterationId}`;
-    const n1VsN2Div = `n1VsN2-${iterationId}`;
-    const sd1VsSd2Div = `sd1VsSd2-${iterationId}`;
-    const skew1VsSkew2Div = `skew1VsSkew2-${iterationId}`;
+
+    const plots = [
+        createComparisonPlot(processedData, methods, methodShapes, {
+            xKey: 'cohensD',
+            title: 'Power vs Cohen\'s d',
+            xaxis: 'Cohen\'s d',
+            yaxis: 'Power',
+            yrange: [0, 1]
+        }),
+        createScatterPlot([{
+            x: processedData.map(d => d.n1),
+            y: processedData.map(d => d.n2),
+            color: processedData.map(d => d.rowIndex),
+            colorscale: 'Viridis',
+            showscale: true,
+            showlegend: false
+        }], {
+            title: 'Sample Size: n1 vs n2',
+            xaxis: 'n1',
+            yaxis: 'n2'
+        }),
+        createScatterPlot([{
+            x: processedData.map(d => d.s1),
+            y: processedData.map(d => d.s2),
+            color: processedData.map(d => d.rowIndex),
+            colorscale: 'Viridis',
+            showscale: false,
+            showlegend: false
+        }], {
+            title: 'Standard Deviation: SD1 vs SD2',
+            xaxis: 'SD1',
+            yaxis: 'SD2'
+        }),
+        createScatterPlot([{
+            x: processedData.map(d => d.sk1),
+            y: processedData.map(d => d.sk2),
+            color: processedData.map(d => d.rowIndex),
+            colorscale: 'Viridis',
+            showscale: false,
+            showlegend: false
+        }], {
+            title: 'Skewness: Skew1 vs Skew2',
+            xaxis: 'Skew1',
+            yaxis: 'Skew2'
+        })
+    ];
+
+    // Generate HTML content
+    const plotDivs = plots.map((plot, index) => `<div id="plot-${analysisIteration}-${index}" class="plot"></div>`).join('');
 
     const htmlContent = `
         <div class="iteration">
             <h2>Analysis ${analysisIteration} (Iterations ${(analysisIteration - 1) * downloadFrequency + 1} - ${analysisIteration * downloadFrequency})</h2>
             ${aiAnalysisHtml}
-            <div id="${powerVsCohensDiv}" class="plot"></div>
-            <div id="${n1VsN2Div}" class="plot"></div>
-            <div id="${sd1VsSd2Div}" class="plot"></div>
-            <div id="${skew1VsSkew2Div}" class="plot"></div>
+            ${plotDivs}
             ${summaryStatsHtml}
             ${nextValuesHtml}
         </div>
@@ -425,10 +378,9 @@ async function analyzeData(data, currentSeedValues, analysisIteration, downloadF
     const plotlyScript = `
         <script>
         setTimeout(() => {
-            Plotly.newPlot('${powerVsCohensDiv}', ${JSON.stringify(powerVsCohensD.data)}, ${JSON.stringify(powerVsCohensD.layout)});
-            Plotly.newPlot('${n1VsN2Div}', ${JSON.stringify(n1VsN2.data)}, ${JSON.stringify(n1VsN2.layout)});
-            Plotly.newPlot('${sd1VsSd2Div}', ${JSON.stringify(sd1VsSd2.data)}, ${JSON.stringify(sd1VsSd2.layout)});
-            Plotly.newPlot('${skew1VsSkew2Div}', ${JSON.stringify(skew1VsSkew2.data)}, ${JSON.stringify(skew1VsSkew2.layout)});
+            ${plots.map((plot, index) => `
+                Plotly.newPlot('plot-${analysisIteration}-${index}', ${JSON.stringify(plot.data)}, ${JSON.stringify(plot.layout)});
+            `).join('')}
         }, 100);
         </script>
     `;
