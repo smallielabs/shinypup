@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { generateIntroduction, getAIAnalysis } = require('./src/modules/openaiModule');
 const { generateRandomFromSeed, calculateSummaryStats } = require('./src/modules/mathModule');
-const { createScatterPlot, createComparisonPlot } = require('./src/modules/plotModule');
+const { createComparisonPlot, createStripPlot } = require('./src/modules/plotModule');
 const {
     launchBrowser,
     createPage,
@@ -323,41 +323,29 @@ async function analyzeData(data, currentSeedValues, analysisIteration, downloadF
             yaxis: 'Power',
             yrange: [0, 1]
         }),
-        createScatterPlot([{
-            x: processedData.map(d => d.n1),
-            y: processedData.map(d => d.n2),
-            color: processedData.map(d => d.rowIndex),
+        createStripPlot(processedData, ['n1', 'n2'], {
+            title: 'Sample Size Distribution',
+            xaxis: 'Group',
+            yaxis: 'Sample Size',
             colorscale: 'Viridis',
             showscale: true,
             showlegend: false
-        }], {
-            title: 'Sample Size: n1 vs n2',
-            xaxis: 'n1',
-            yaxis: 'n2'
         }),
-        createScatterPlot([{
-            x: processedData.map(d => d.s1),
-            y: processedData.map(d => d.s2),
-            color: processedData.map(d => d.rowIndex),
+        createStripPlot(processedData, ['s1', 's2'], {
+            title: 'Standard Deviation Distribution',
+            xaxis: 'Group',
+            yaxis: 'Standard Deviation',
             colorscale: 'Viridis',
             showscale: false,
             showlegend: false
-        }], {
-            title: 'Standard Deviation: SD1 vs SD2',
-            xaxis: 'SD1',
-            yaxis: 'SD2'
         }),
-        createScatterPlot([{
-            x: processedData.map(d => d.sk1),
-            y: processedData.map(d => d.sk2),
-            color: processedData.map(d => d.rowIndex),
+        createStripPlot(processedData, ['sk1', 'sk2'], {
+            title: 'Skewness Distribution',
+            xaxis: 'Group',
+            yaxis: 'Skewness',
             colorscale: 'Viridis',
             showscale: false,
             showlegend: false
-        }], {
-            title: 'Skewness: Skew1 vs Skew2',
-            xaxis: 'Skew1',
-            yaxis: 'Skew2'
         })
     ];
 
