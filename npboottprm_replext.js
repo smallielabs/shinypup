@@ -110,7 +110,7 @@ async function npboottprm_replext(options = {}, seedValues = {}) {
     }
 }
 
-async function repeatedNpboottprm(options = {}, initialSeedValues = {}) {
+async function repeatedNpboottprm(options = {}, initialSeedValues = {}, openAIOptions = {}) {
     const {
         iterations = Infinity,
         cellBlock = 'T2 Cell Block 1.1',
@@ -168,7 +168,7 @@ async function repeatedNpboottprm(options = {}, initialSeedValues = {}) {
         
                     Format your response as HTML that can be directly inserted into a web page.
                 `;
-                    const introduction = await generateIntroduction(options, initialSeedValues, introductionPrompt);
+                    const introduction = await generateIntroduction(options, initialSeedValues, introductionPrompt, openAIOptions);
                     const introductionHtml = `
                     <div class="introduction">
                         ${introduction}
@@ -178,7 +178,7 @@ async function repeatedNpboottprm(options = {}, initialSeedValues = {}) {
                     introductionDisplayed = true;
                 }
 
-                const analysisResults = await analyzeData(data.slice(-simulationsToAnalyze), currentValues, analysisIteration, downloadFrequency);
+                const analysisResults = await analyzeData(data.slice(-simulationsToAnalyze), currentValues, analysisIteration, downloadFrequency, openAIOptions);
 
                 // Update currentValues with AI-suggested new seed values
                 if (analysisResults.newSeedValues) {
@@ -200,7 +200,7 @@ async function repeatedNpboottprm(options = {}, initialSeedValues = {}) {
 
 }
 
-async function analyzeData(data, currentSeedValues, analysisIteration, downloadFrequency) {
+async function analyzeData(data, currentSeedValues, analysisIteration, downloadFrequency, openAIOptions) {
     // Convert string values to numbers and calculate additional metrics
     const processedData = data.map((row, index) => ({
         rowIndex: index,
@@ -256,7 +256,7 @@ async function analyzeData(data, currentSeedValues, analysisIteration, downloadF
 
     Format your response as a JSON object with keys: "summary", "comparison", "explanation", "implications", "suggestions", and "newSeedValues".
     `;
-    const aiAnalysis = await getAIAnalysis(summaryStats, currentSeedValues, aiAnalysisPrompt);
+    const aiAnalysis = await getAIAnalysis(summaryStats, currentSeedValues, aiAnalysisPrompt, openAIOptions);
     
     // Generate HTML content for summary stats and next values
     const summaryStatsHtml = `
@@ -409,4 +409,9 @@ repeatedNpboottprm({
     Sk2: { min: -1, max: 1 },
     n1: { min: 5, max: 12 },
     n2: { min: 5, max: 12 }
+}, {
+    // Optional: OpenAI credentials
+    apiKey: process.env.OPENAI_API_KEY,
+    organization: process.env.OPENAI_ORGANIZATION,
+    project: process.env.OPENAI_PROJECT
 })
