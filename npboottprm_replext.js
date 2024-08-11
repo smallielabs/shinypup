@@ -4,7 +4,6 @@ const fs = require('fs');
 const path = require('path');
 const { generateIntroduction, getAIAnalysis } = require('./src/modules/openaiModule');
 const { generateRandomFromSeed, calculateSummaryStats } = require('./src/modules/mathModule');
-const { createComparisonPlot, createStripPlot } = require('./src/modules/plotModule');
 const {
     launchBrowser,
     createPage,
@@ -16,6 +15,8 @@ const {
     submitResults,
     downloadAndProcessCSV
 } = require('./src/modules/puppeteerModule');
+const { processData } = require('./src/modules/dataProcessingModule');
+const { generatePlots } = require('./src/modules/plotGenerationModule');
 
 const delay = ms => new Promise(res => setTimeout(res, ms));
 
@@ -178,7 +179,7 @@ async function repeatedNpboottprm(options = {}, initialSeedValues = {}, openAIOp
                     introductionDisplayed = true;
                 }
 
-                const analysisResults = await analyzeData(data.slice(-simulationsToAnalyze), currentValues, analysisIteration, downloadFrequency, openAIOptions);
+                const analysisResults = await analyzeData(data.slice(-simulationsToAnalyze), currentValues, analysisIteration, downloadFrequency, openAIOptions, cellBlock);
 
                 // Update currentValues with AI-suggested new seed values
                 if (analysisResults.newSeedValues) {
@@ -200,36 +201,8 @@ async function repeatedNpboottprm(options = {}, initialSeedValues = {}, openAIOp
 
 }
 
-async function analyzeData(data, currentSeedValues, analysisIteration, downloadFrequency, openAIOptions) {
-    // Convert string values to numbers and calculate additional metrics
-    const processedData = data.map((row, index) => ({
-        rowIndex: index,
-        n1: parseInt(row.n1),
-        n2: parseInt(row.n2),
-        totalSampleSize: parseInt(row.n1) + parseInt(row.n2),
-        m1: parseFloat(row.m1),
-        m2: parseFloat(row.m2),
-        s1: parseFloat(row.s1),
-        s2: parseFloat(row.s2),
-        sk1: parseFloat(row.sk1),
-        sk2: parseFloat(row.sk2),
-        cohensD: Math.abs(parseFloat(row.m1) - parseFloat(row.m2)) / 
-                 Math.sqrt((Math.pow(parseFloat(row.s1), 2) + Math.pow(parseFloat(row.s2), 2)) / 2),
-        st: parseFloat(row.st),
-        wt: parseFloat(row.wt),
-        npbtt: parseFloat(row.npbtt),
-        wrst: parseFloat(row.wrst),
-        ptt: parseFloat(row.ptt)
-    }));
-
-    const methods = ['st', 'wt', 'npbtt', 'wrst', 'ptt'];
-    const methodShapes = {
-        st: 'circle',
-        wt: 'square',
-        npbtt: 'diamond',
-        wrst: 'triangle-up',
-        ptt: 'star'
-    };
+async function analyzeData(data, currentSeedValues, analysisIteration, downloadFrequency, openAIOptions, cellBlock) {
+    const { processedData, methods, methodShapes } = processData(data, cellBlock);
 
     // Calculate summary statistics using the mathModule
     const summaryStats = calculateSummaryStats(processedData, methods);
@@ -257,6 +230,9 @@ async function analyzeData(data, currentSeedValues, analysisIteration, downloadF
     Format your response as a JSON object with keys: "summary", "comparison", "explanation", "implications", "suggestions", and "newSeedValues".
     `;
     const aiAnalysis = await getAIAnalysis(summaryStats, currentSeedValues, aiAnalysisPrompt, openAIOptions);
+    
+    // Generate plots
+    const plots = generatePlots(processedData, methods, methodShapes, cellBlock);
     
     // Generate HTML content for summary stats and next values
     const summaryStatsHtml = `
@@ -314,40 +290,6 @@ async function analyzeData(data, currentSeedValues, analysisIteration, downloadF
             </tbody>
         </table>
     ` : '';
-
-    const plots = [
-        createComparisonPlot(processedData, methods, methodShapes, {
-            xKey: 'cohensD',
-            title: 'Power vs Cohen\'s d',
-            xaxis: 'Cohen\'s d',
-            yaxis: 'Power',
-            yrange: [0, 1]
-        }),
-        createStripPlot(processedData, ['n1', 'n2'], {
-            title: 'Sample Size Distribution',
-            xaxis: 'Group',
-            yaxis: 'Sample Size',
-            colorscale: 'Viridis',
-            showscale: true,
-            showlegend: false
-        }),
-        createStripPlot(processedData, ['s1', 's2'], {
-            title: 'Standard Deviation Distribution',
-            xaxis: 'Group',
-            yaxis: 'Standard Deviation',
-            colorscale: 'Viridis',
-            showscale: false,
-            showlegend: false
-        }),
-        createStripPlot(processedData, ['sk1', 'sk2'], {
-            title: 'Skewness Distribution',
-            xaxis: 'Group',
-            yaxis: 'Skewness',
-            colorscale: 'Viridis',
-            showscale: false,
-            showlegend: false
-        })
-    ];
 
     // Generate HTML content
     const plotDivs = plots.map((plot, index) => `<div id="plot-${analysisIteration}-${index}" class="plot"></div>`).join('');
