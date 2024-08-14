@@ -72,17 +72,6 @@ function generatePlots(processedData, methods, methodShapes, cellBlock) {
         );
     }
 
-    // Add a comparison plot for all methods across all cell blocks
-    plots.push(
-        createComparisonPlot(processedData, methods, methodShapes, {
-            xKey: 'rowIndex',
-            title: 'Method Comparison',
-            xaxis: 'Simulation Index',
-            yaxis: 'Value',
-            yrange: [0, 1]
-        })
-    );
-
     return plots;
 }
 
