@@ -203,9 +203,12 @@ async function repeatedNpboottprm(options = {}, initialSeedValues = {}, openAIOp
 
 async function analyzeData(data, currentSeedValues, analysisIteration, downloadFrequency, openAIOptions, cellBlock) {
     const { processedData, methods, methodShapes } = processData(data, cellBlock);
+    console.log(`This is the processedData: ${processedData}`);
+    console.log(`This is the methods: ${methods}`);
 
     // Calculate summary statistics using the mathModule
     const summaryStats = calculateSummaryStats(processedData, methods);
+    console.log(`This is the summaryStats: ${summaryStats}`);
 
     // Get AI analysis
     const aiAnalysisPrompt = `
@@ -230,6 +233,7 @@ async function analyzeData(data, currentSeedValues, analysisIteration, downloadF
     Format your response as a JSON object with keys: "summary", "comparison", "explanation", "implications", "suggestions", and "newSeedValues".
     `;
     const aiAnalysis = await getAIAnalysis(summaryStats, currentSeedValues, aiAnalysisPrompt, openAIOptions);
+    console.log(`This is the summaryStats: ${aiAnalysis}`)
     
     // Generate plots
     const plots = generatePlots(processedData, methods, methodShapes, cellBlock);
@@ -332,7 +336,7 @@ async function analyzeData(data, currentSeedValues, analysisIteration, downloadF
 // Usage example
 repeatedNpboottprm({
     iterations: 4,
-    cellBlock: 'T2 Cell Block 1.1',
+    cellBlock: 'TS2 Cell Block 1.1',
     n_simulations: 10,
     nboot: 1000,
     conf_level: 0.95,
@@ -343,14 +347,26 @@ repeatedNpboottprm({
     simulationsToAnalyze: 2
 }, {
     // Initial seed values with min and max
+    // M1: { min: 5, max: 9 },
+    // S1: { min: 2, max: 3 },
+    // M2: { min: 4, max: 10 },
+    // S2: { min: 1.5, max: 3.5 },
+    // Sk1: { min: -1, max: 1 },
+    // Sk2: { min: -1, max: 1 },
+    // n1: { min: 5, max: 12 },
+    // n2: { min: 5, max: 12 }
     M1: { min: 5, max: 9 },
     S1: { min: 2, max: 3 },
     M2: { min: 4, max: 10 },
     S2: { min: 1.5, max: 3.5 },
+    M3: { min: 4, max: 10 },
+    S3: { min: 1.5, max: 3.5 },
     Sk1: { min: -1, max: 1 },
     Sk2: { min: -1, max: 1 },
+    Sk3: { min: -1, max: 1 },
     n1: { min: 5, max: 12 },
-    n2: { min: 5, max: 12 }
+    n2: { min: 5, max: 12 },
+    n3: { min: 5, max: 12 }
 }, {
     // Optional: OpenAI credentials
     apiKey: process.env.OPENAI_API_KEY,

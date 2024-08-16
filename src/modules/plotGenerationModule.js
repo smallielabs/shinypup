@@ -7,9 +7,9 @@ function generatePlots(processedData, methods, methodShapes, cellBlock) {
         plots.push(
             createComparisonPlot(processedData, methods, methodShapes, {
                 xKey: 'cohensD',
-                title: 'Power vs Cohen\'s d',
+                title: 'Rejection Rate vs Cohen\'s d',
                 xaxis: 'Cohen\'s d',
-                yaxis: 'Power',
+                yaxis: 'Rejection Rate',
                 yrange: [0, 1]
             }),
             createStripPlot(processedData, ['n1', 'n2'], {
@@ -60,13 +60,46 @@ function generatePlots(processedData, methods, methodShapes, cellBlock) {
             })
         );
     } else if (cellBlock.startsWith('TS2') || cellBlock.startsWith('TS3')) {
+        // plots.push(
+        //     createStripPlot(processedData, ['n1', 'n2', 'n3'], {
+        //         title: 'Sample Size Distribution',
+        //         xaxis: 'Group',
+        //         yaxis: 'Sample Size',
+        //         colorscale: 'Viridis',
+        //         showscale: true,
+        //         showlegend: false
+        //     })
+        // );
         plots.push(
+            createComparisonPlot(processedData, methods, methodShapes, {
+                xKey: 'etaSquared',
+                title: 'Rejection Rate vs eta Squared',
+                xaxis: 'eta Squared',
+                yaxis: 'Rejection Rate',
+                yrange: [0, 1]
+            }),
             createStripPlot(processedData, ['n1', 'n2', 'n3'], {
                 title: 'Sample Size Distribution',
                 xaxis: 'Group',
                 yaxis: 'Sample Size',
                 colorscale: 'Viridis',
                 showscale: true,
+                showlegend: false
+            }),
+            createStripPlot(processedData, ['s1', 's2', 's3'], {
+                title: 'Standard Deviation Distribution',
+                xaxis: 'Group',
+                yaxis: 'Standard Deviation',
+                colorscale: 'Viridis',
+                showscale: false,
+                showlegend: false
+            }),
+            createStripPlot(processedData, ['sk1', 'sk2', 'sk3'], {
+                title: 'Skewness Distribution',
+                xaxis: 'Group',
+                yaxis: 'Skewness',
+                colorscale: 'Viridis',
+                showscale: false,
                 showlegend: false
             })
         );
