@@ -203,12 +203,9 @@ async function repeatedNpboottprm(options = {}, initialSeedValues = {}, openAIOp
 
 async function analyzeData(data, currentSeedValues, analysisIteration, downloadFrequency, openAIOptions, cellBlock) {
     const { processedData, methods, methodShapes } = processData(data, cellBlock);
-    console.log(`This is the processedData: ${processedData}`);
-    console.log(`This is the methods: ${methods}`);
 
     // Calculate summary statistics using the mathModule
     const summaryStats = calculateSummaryStats(processedData, methods);
-    console.log(`This is the summaryStats: ${summaryStats}`);
 
     // Get AI analysis
     const aiAnalysisPrompt = `

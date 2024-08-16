@@ -49,7 +49,15 @@ async function getAIAnalysis(summaryStats, currentSeedValues, prompt, openAIOpti
             max_tokens: 1000
         });
 
-        return JSON.parse(response.choices[0].message.content);
+        const rawContent = response.choices[0].message.content;
+
+        try {
+            return JSON.parse(rawContent);
+        } catch (parseError) {
+            console.error("Error parsing AI response:", parseError);
+            return null;
+        }
+        
     } catch (error) {
         console.error('Error in AI analysis:', error);
         return null;

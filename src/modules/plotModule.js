@@ -39,9 +39,11 @@ function createComparisonPlot(processedData, methods, methodShapes, options = {}
 
     const layout = {
         title: options.title,
-        xaxis: { title: options.xaxis },
-        yaxis: { title: options.yaxis, range: options.yrange }
+        xaxis: options.xaxis,
+        yaxis: options.yaxis,
+        yrange: options.yrange
     };
+
 
     return createScatterPlot(data, layout, { showlegend: true });
 }

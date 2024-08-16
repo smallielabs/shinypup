@@ -14,7 +14,7 @@ function generatePlots(processedData, methods, methodShapes, cellBlock) {
             }),
             createStripPlot(processedData, ['n1', 'n2'], {
                 title: 'Sample Size Distribution',
-                xaxis: 'Group',
+                xaxis: '',
                 yaxis: 'Sample Size',
                 colorscale: 'Viridis',
                 showscale: true,
@@ -22,7 +22,7 @@ function generatePlots(processedData, methods, methodShapes, cellBlock) {
             }),
             createStripPlot(processedData, ['s1', 's2'], {
                 title: 'Standard Deviation Distribution',
-                xaxis: 'Group',
+                xaxis: '',
                 yaxis: 'Standard Deviation',
                 colorscale: 'Viridis',
                 showscale: false,
@@ -30,7 +30,7 @@ function generatePlots(processedData, methods, methodShapes, cellBlock) {
             }),
             createStripPlot(processedData, ['sk1', 'sk2'], {
                 title: 'Skewness Distribution',
-                xaxis: 'Group',
+                xaxis: '',
                 yaxis: 'Skewness',
                 colorscale: 'Viridis',
                 showscale: false,
@@ -41,7 +41,7 @@ function generatePlots(processedData, methods, methodShapes, cellBlock) {
         plots.push(
             createStripPlot(processedData, ['n1', 'n2'], {
                 title: 'Sample Size Distribution',
-                xaxis: 'Group',
+                xaxis: '',
                 yaxis: 'Sample Size',
                 colorscale: 'Viridis',
                 showscale: true,
@@ -52,7 +52,7 @@ function generatePlots(processedData, methods, methodShapes, cellBlock) {
         plots.push(
             createStripPlot(processedData, ['n'], {
                 title: 'Sample Size Distribution',
-                xaxis: 'Group',
+                xaxis: '',
                 yaxis: 'Sample Size',
                 colorscale: 'Viridis',
                 showscale: true,
@@ -60,16 +60,6 @@ function generatePlots(processedData, methods, methodShapes, cellBlock) {
             })
         );
     } else if (cellBlock.startsWith('TS2') || cellBlock.startsWith('TS3')) {
-        // plots.push(
-        //     createStripPlot(processedData, ['n1', 'n2', 'n3'], {
-        //         title: 'Sample Size Distribution',
-        //         xaxis: 'Group',
-        //         yaxis: 'Sample Size',
-        //         colorscale: 'Viridis',
-        //         showscale: true,
-        //         showlegend: false
-        //     })
-        // );
         plots.push(
             createComparisonPlot(processedData, methods, methodShapes, {
                 xKey: 'etaSquared',
@@ -80,7 +70,7 @@ function generatePlots(processedData, methods, methodShapes, cellBlock) {
             }),
             createStripPlot(processedData, ['n1', 'n2', 'n3'], {
                 title: 'Sample Size Distribution',
-                xaxis: 'Group',
+                xaxis: '',
                 yaxis: 'Sample Size',
                 colorscale: 'Viridis',
                 showscale: true,
@@ -88,7 +78,7 @@ function generatePlots(processedData, methods, methodShapes, cellBlock) {
             }),
             createStripPlot(processedData, ['s1', 's2', 's3'], {
                 title: 'Standard Deviation Distribution',
-                xaxis: 'Group',
+                xaxis: '',
                 yaxis: 'Standard Deviation',
                 colorscale: 'Viridis',
                 showscale: false,
@@ -96,7 +86,7 @@ function generatePlots(processedData, methods, methodShapes, cellBlock) {
             }),
             createStripPlot(processedData, ['sk1', 'sk2', 'sk3'], {
                 title: 'Skewness Distribution',
-                xaxis: 'Group',
+                xaxis: '',
                 yaxis: 'Skewness',
                 colorscale: 'Viridis',
                 showscale: false,

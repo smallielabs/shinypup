@@ -28,43 +28,23 @@ function processData(data, cellBlock) {
                 n1: parseInt(row.n1),
                 n2: parseInt(row.n2),
                 totalSampleSize: parseInt(row.n1) + parseInt(row.n2),
-                st: parseFloat(row.ST),
-                wt: parseFloat(row.WT),
-                npbtt: parseFloat(row.NPBTT),
-                wrst: parseFloat(row.WRST),
-                ptta: parseFloat(row.PTTa),
-                ptte: parseFloat(row.PTTe)
+                st: parseFloat(row.st),
+                wt: parseFloat(row.wt),
+                npbtt: parseFloat(row.npbtt),
+                wrst: parseFloat(row.wrst),
+                ptta: parseFloat(row.ptta),
+                ptte: parseFloat(row.ptte)
             };
         } else if (cellBlock.startsWith('T5') || cellBlock.startsWith('T6')) {
             return {
                 ...baseData,
                 n: parseInt(row.n),
-                pt: parseFloat(row.PT),
-                npbtt: parseFloat(row.NPBTT),
-                wrst: parseFloat(row.WRST),
-                ptt: parseFloat(row.PTT)
+                pt: parseFloat(row.pt),
+                npbtt: parseFloat(row.npbtt),
+                wrst: parseFloat(row.wrst),
+                ptt: parseFloat(row.ptt)
             };
         } else if (cellBlock.startsWith('TS2') || cellBlock.startsWith('TS3')) {
-            // return {
-            //     ...baseData,
-            //     n1: parseInt(row.n1),
-            //     n2: parseInt(row.n2),
-            //     n3: parseInt(row.n3),
-            //     totalSampleSize: parseInt(row.n1) + parseInt(row.n2) + parseInt(row.n3),
-            //     m1: parseFloat(row.m1),
-            //     m2: parseFloat(row.m2),
-            //     m3: parseFloat(row.m3),
-            //     s1: parseFloat(row.s1),
-            //     s2: parseFloat(row.s2),
-            //     s3: parseFloat(row.s3),
-            //     sk1: parseFloat(row.sk1),
-            //     sk2: parseFloat(row.sk2),
-            //     sk3: parseFloat(row.sk3),
-            //     anov: parseFloat(row.ANOV),
-            //     kw: parseFloat(row.KW),
-            //     npbft: parseFloat(row.NPBFT),
-            //     pft: parseFloat(row.PFT)
-            // };
             const n1 = parseInt(row.n1);
             const n2 = parseInt(row.n2);
             const n3 = parseInt(row.n3);
@@ -83,7 +63,6 @@ function processData(data, cellBlock) {
                         (n2 - 1) * Math.pow(parseFloat(row.s2), 2) + 
                         (n3 - 1) * Math.pow(parseFloat(row.s3), 2);
             const etaSquared = ssb / sst;
-            console.log(`etaSquared: ${etaSquared}`);
 
             return {
                 ...baseData,
