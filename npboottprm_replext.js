@@ -50,6 +50,42 @@ async function npboottprm_replext(options = {}, seedValues = {}) {
             filledValues.n1 = await fillInput(page, '#n1', generateRandomFromSeed(seedValues.n1.min, seedValues.n1.max, true), delayBetweenActions);
             filledValues.n2 = await fillInput(page, '#n2', generateRandomFromSeed(seedValues.n2.min, seedValues.n2.max, true), delayBetweenActions);
         } else if (cellBlock.startsWith('T4') || cellBlock.startsWith('TS1')) {
+            console.log('Entering T4 or TS1 block handling');
+
+            const rdistValue = cellBlock.includes('1.1') ? 'rlnorm' :
+            cellBlock.includes('2.1') ? 'rpois' :
+            cellBlock.includes('3.1') ? 'rchisq' :
+            cellBlock.includes('4.1') ? 'rlnorm' :
+            cellBlock.includes('5.1') ? 'rcauchy' :
+            cellBlock.includes('6.1') ? 'rchisq,rpois' :
+            'rlnorm,rchisq';
+
+            console.log(`Attempting to set rdist to: ${rdistValue}`);
+
+            // await fillUserDefinedInput(page, '#rdist', rdistValue, delayBetweenActions);
+            // filledValues.rdist = rdistValue;
+
+            // filledValues.rdist = await fillUserDefinedInput(page, '#rdist', rdistValue, delayBetweenActions);
+            // filledValues.rdist = await fillInput(page, '#rdist', rdistValue, delayBetweenActions);
+
+            // await delay(10000);
+            
+            // Check if #rdist element exists
+            const rdistElement = await page.$('#rdist');
+            if (!rdistElement) {
+                console.error('#rdist element not found');
+                const pageContent = await page.content();
+                 console.log(`Current page content:\n${pageContent}`);
+                throw new Error('#rdist element not found');
+            }
+            
+            try {
+                filledValues.rdist = await fillUserDefinedInput(page, '#rdist', rdistValue, delayBetweenActions);
+            } catch (error) {
+                console.error(`Error filling #rdist: ${error.message}`);
+                throw error;
+            }
+
             filledValues.par1_1 = await fillInput(page, '#par1_1', generateRandomFromSeed(seedValues.par1_1.min, seedValues.par1_1.max, false), delayBetweenActions);
             filledValues.par2_1 = await fillInput(page, '#par2_1', generateRandomFromSeed(seedValues.par2_1.min, seedValues.par2_1.max, false), delayBetweenActions);
             filledValues.par1_2 = await fillInput(page, '#par1_2', generateRandomFromSeed(seedValues.par1_2.min, seedValues.par1_2.max, false), delayBetweenActions);
@@ -57,15 +93,7 @@ async function npboottprm_replext(options = {}, seedValues = {}) {
             filledValues.n1 = await fillInput(page, '#n1', generateRandomFromSeed(seedValues.n1.min, seedValues.n1.max, true), delayBetweenActions);
             filledValues.n2 = await fillInput(page, '#n2', generateRandomFromSeed(seedValues.n2.min, seedValues.n2.max, true), delayBetweenActions);
             
-            const rdistValue = cellBlock.includes('1.1') ? 'rlnorm' :
-                               cellBlock.includes('2.1') ? 'rpois' :
-                               cellBlock.includes('3.1') ? 'rchisq' :
-                               cellBlock.includes('4.1') ? 'rlnorm' :
-                               cellBlock.includes('5.1') ? 'rcauchy' :
-                               cellBlock.includes('6.1') ? 'rchisq,rpois' :
-                               'rlnorm,rchisq';
-            await fillUserDefinedInput(page, '#rdist', rdistValue, delayBetweenActions);
-            filledValues.rdist = rdistValue;
+
         } else if (cellBlock.startsWith('T5') || cellBlock.startsWith('T6')) {
             filledValues.M1 = await fillInput(page, '#M1', generateRandomFromSeed(seedValues.M1.min, seedValues.M1.max, true), delayBetweenActions);
             filledValues.S1 = await fillInput(page, '#S1', generateRandomFromSeed(seedValues.S1.min, seedValues.S1.max, false), delayBetweenActions);
@@ -333,7 +361,7 @@ async function analyzeData(data, currentSeedValues, analysisIteration, downloadF
 // Usage example
 repeatedNpboottprm({
     iterations: 4,
-    cellBlock: 'TS2 Cell Block 1.1',
+    cellBlock: 'T4 Cell Block 1.1',
     n_simulations: 10,
     nboot: 1000,
     conf_level: 0.95,
@@ -352,18 +380,27 @@ repeatedNpboottprm({
     // Sk2: { min: -1, max: 1 },
     // n1: { min: 5, max: 12 },
     // n2: { min: 5, max: 12 }
-    M1: { min: 5, max: 9 },
-    S1: { min: 2, max: 3 },
-    M2: { min: 4, max: 10 },
-    S2: { min: 1.5, max: 3.5 },
-    M3: { min: 4, max: 10 },
-    S3: { min: 1.5, max: 3.5 },
-    Sk1: { min: -1, max: 1 },
-    Sk2: { min: -1, max: 1 },
-    Sk3: { min: -1, max: 1 },
-    n1: { min: 5, max: 12 },
-    n2: { min: 5, max: 12 },
-    n3: { min: 5, max: 12 }
+    // TS2
+    // M1: { min: 5, max: 9 },
+    // S1: { min: 2, max: 3 },
+    // M2: { min: 4, max: 10 },
+    // S2: { min: 1.5, max: 3.5 },
+    // M3: { min: 4, max: 10 },
+    // S3: { min: 1.5, max: 3.5 },
+    // Sk1: { min: -1, max: 1 },
+    // Sk2: { min: -1, max: 1 },
+    // Sk3: { min: -1, max: 1 },
+    // n1: { min: 5, max: 12 },
+    // n2: { min: 5, max: 12 },
+    // n3: { min: 5, max: 12 }
+    // rdistValue: {'rlnorm'},
+    par1_1: { min: 1, max: 2},
+    par2_1: { min: 0.5, max: 0.7},
+    par1_2: { min: 2, max: 3},
+    par2_2: { min: 0.9, max: 1.1},
+    n1: { min: 5, max: 7 },
+    n2: { min: 5, max: 7 }
+
 }, {
     // Optional: OpenAI credentials
     apiKey: process.env.OPENAI_API_KEY,

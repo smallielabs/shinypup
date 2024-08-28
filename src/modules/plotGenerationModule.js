@@ -39,12 +39,35 @@ function generatePlots(processedData, methods, methodShapes, cellBlock) {
         );
     } else if (cellBlock.startsWith('T4') || cellBlock.startsWith('TS1')) {
         plots.push(
+            createComparisonPlot(processedData, methods, methodShapes, {
+                xKey: 'effectSize',
+                title: 'Rejection Rate vs Effect Size',
+                xaxis: 'Effect Size',
+                yaxis: 'Rejection Rate',
+                yrange: [0, 1]
+            }),
             createStripPlot(processedData, ['n1', 'n2'], {
                 title: 'Sample Size Distribution',
                 xaxis: '',
                 yaxis: 'Sample Size',
                 colorscale: 'Viridis',
                 showscale: true,
+                showlegend: false
+            }),
+            createStripPlot(processedData, ['par1_1', 'par1_2'], {
+                title: 'Parameter 1 Distribution',
+                xaxis: '',
+                yaxis: 'Parameter 1',
+                colorscale: 'Viridis',
+                showscale: false,
+                showlegend: false
+            }),
+            createStripPlot(processedData, ['par2_1', 'par2_2'], {
+                title: 'Parameter 2 Distribution',
+                xaxis: '',
+                yaxis: 'Parameter 2',
+                colorscale: 'Viridis',
+                showscale: false,
                 showlegend: false
             })
         );
