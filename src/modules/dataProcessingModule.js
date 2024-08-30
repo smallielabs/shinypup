@@ -63,7 +63,7 @@ function processData(data, cellBlock) {
                     effectSize = Math.abs(par1_1 - par1_2) / ((par2_1 + par2_2) / 2);
                 } else if (rdistValue === 'rchisq,rpois' || rdistValue === 'rlnorm,rchisq') {
                     // For mixed distributions, we can't calculate a meaningful effect size
-                    // You might want to set this to null or use a placeholder
+                    // We set this to null
                     effectSize = null;
                 }
     
@@ -84,16 +84,6 @@ function processData(data, cellBlock) {
                     ptta: parseFloat(row.ptta),
                     ptte: parseFloat(row.ptte)
                 };
-
-                
-                // totalSampleSize: parseInt(row.n1) + parseInt(row.n2),
-                // st: parseFloat(row.st),
-                // wt: parseFloat(row.wt),
-                // npbtt: parseFloat(row.npbtt),
-                // wrst: parseFloat(row.wrst),
-                // ptta: parseFloat(row.ptta),
-                // ptte: parseFloat(row.ptte)
-            // };
         } else if (cellBlock.startsWith('T5') || cellBlock.startsWith('T6')) {
             return {
                 ...baseData,

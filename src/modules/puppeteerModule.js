@@ -38,57 +38,21 @@ async function selectCellBlock(page, cellBlock) {
             break;
         }
     }
-    console.log(`Selected Cell Block: ${cellBlock}`);
     
     // Add a delay and log the page content after selection
-    // await page.waitForTimeout(2000);
     await delay(2000);
     const pageContent = await page.content();
-    console.log(`Page content after cell block selection:\n${pageContent}`);
 }
 
 async function fillUserDefinedInput(page, selector, value, delayBetweenActions) {
-    console.log(`Attempting to fill ${selector} with value ${value}`);
     const element = await page.$(selector);
-    if (!element) {
-        console.error(`Element with selector ${selector} not found`);
-        const pageContent = await page.content();
-        console.log(`Current page content:\n${pageContent}`);
-        throw new Error(`Element with selector ${selector} not found`);
-    }
     await page.$eval(selector, (element, val) => {
         element.value = val;
         const event = new Event('change', { bubbles: true });
         element.dispatchEvent(event);
     }, value.toString());
-    console.log(`Set ${selector} to ${value}`);
     if (delayBetweenActions > 0) await delay(delayBetweenActions);
 }
-
-// async function selectCellBlock(page, cellBlock) {
-//     await page.click('.selectize-input');
-//     await page.waitForSelector('.selectize-dropdown-content .option', { visible: true });
-    
-//     const options = await page.$$('.selectize-dropdown-content .option');
-//     for (let option of options) {
-//         const text = await page.evaluate(el => el.textContent, option);
-//         if (text.trim() === cellBlock) {
-//             await option.click();
-//             break;
-//         }
-//     }
-//     console.log(`Selected Cell Block: ${cellBlock}`);
-// }
-
-// async function fillUserDefinedInput(page, selector, value, delayBetweenActions) {
-//     await page.$eval(selector, (element, val) => {
-//         element.value = val;
-//         const event = new Event('change', { bubbles: true });
-//         element.dispatchEvent(event);
-//     }, value.toString());
-//     console.log(`Set ${selector} to ${value}`);
-//     if (delayBetweenActions > 0) await delay(delayBetweenActions);
-// }
 
 async function fillInput(page, selector, value, delayBetweenActions) {
     await page.$eval(selector, (element, val) => {
