@@ -27,9 +27,13 @@ function processData(data, cellBlock) {
                 const n2 = parseInt(row.n2);
                 const par1_1 = parseFloat(row.par1_1);
                 const par1_2 = parseFloat(row.par1_2);
-                const par2_1 = parseFloat(row.par2_1);
-                const par2_2 = parseFloat(row.par2_2);
-                
+
+                let par2_1, par2_2;
+                if(cellBlock.includes('1.1') || cellBlock.includes('3.1')){
+                    par2_1 = parseFloat(row.par2_1);
+                    par2_2 = parseFloat(row.par2_2);
+                }
+
                 let effectSize;
 
                 // Determine the distribution type based on cellBlock
@@ -43,31 +47,14 @@ function processData(data, cellBlock) {
     
                 // Calculate effect size based on distribution type
                 if (rdistValue === 'rlnorm') {
+
+
                     // Cohen's d for lognormal distribution
                     effectSize = Math.abs(Math.exp(par1_1 + par2_1**2/2) - Math.exp(par1_2 + par2_2**2/2)) /
                                  Math.sqrt((Math.exp(2*par1_1 + par2_1**2) * (Math.exp(par2_1**2) - 1) +
                                             Math.exp(2*par1_2 + par2_2**2) * (Math.exp(par2_2**2) - 1)) / 2);
-                } else if (rdistValue === 'rpois') {
-                    // Effect size for Poisson distribution (using difference in means divided by pooled standard deviation)
-                    effectSize = Math.abs(par1_1 - par1_2) / Math.sqrt((par1_1 + par1_2) / 2);
-                } else if (rdistValue === 'rchisq') {
-                    // Effect size for Chi-squared distribution (using difference in means divided by pooled standard deviation)
-                    const mean1 = par1_1 + par2_1;
-                    const mean2 = par1_2 + par2_2;
-                    const var1 = 2 * (par1_1 + 2 * par2_1);
-                    const var2 = 2 * (par1_2 + 2 * par2_2);
-                    effectSize = Math.abs(mean1 - mean2) / Math.sqrt((var1 + var2) / 2);
-                } else if (rdistValue === 'rcauchy') {
-                    // For Cauchy distribution, traditional effect size measures are not applicable
-                    // We can use the difference in location parameters divided by the average scale
-                    effectSize = Math.abs(par1_1 - par1_2) / ((par2_1 + par2_2) / 2);
-                } else if (rdistValue === 'rchisq,rpois' || rdistValue === 'rlnorm,rchisq') {
-                    // For mixed distributions, we can't calculate a meaningful effect size
-                    // We set this to null
-                    effectSize = null;
-                }
-    
-                return {
+                                            
+                    return {
                     ...baseData,
                     n1,
                     n2,
@@ -84,6 +71,95 @@ function processData(data, cellBlock) {
                     ptta: parseFloat(row.ptta),
                     ptte: parseFloat(row.ptte)
                 };
+                } else if (rdistValue === 'rpois') {
+                    // Effect size for Poisson distribution (using difference in means divided by pooled standard deviation)
+                    effectSize = Math.abs(par1_1 - par1_2) / Math.sqrt((par1_1 + par1_2) / 2);
+
+                    return {
+                        ...baseData,
+                        n1,
+                        n2,
+                        par1_1,
+                        par1_2,
+                        totalSampleSize: n1 + n2,
+                        effectSize,
+                        st: parseFloat(row.st),
+                        wt: parseFloat(row.wt),
+                        npbtt: parseFloat(row.npbtt),
+                        wrst: parseFloat(row.wrst),
+                        ptta: parseFloat(row.ptta),
+                        ptte: parseFloat(row.ptte)
+                    };
+
+                } else if (rdistValue === 'rchisq') {
+                    // Effect size for Chi-squared distribution (using difference in means divided by pooled standard deviation)
+                    const mean1 = par1_1 + par2_1;
+                    const mean2 = par1_2 + par2_2;
+                    const var1 = 2 * (par1_1 + 2 * par2_1);
+                    const var2 = 2 * (par1_2 + 2 * par2_2);
+                    effectSize = Math.abs(mean1 - mean2) / Math.sqrt((var1 + var2) / 2);
+
+                    return {
+                        ...baseData,
+                        n1,
+                        n2,
+                        par1_1,
+                        par1_2,
+                        par2_1,
+                        par2_2,
+                        totalSampleSize: n1 + n2,
+                        effectSize,
+                        st: parseFloat(row.st),
+                        wt: parseFloat(row.wt),
+                        npbtt: parseFloat(row.npbtt),
+                        wrst: parseFloat(row.wrst),
+                        ptta: parseFloat(row.ptta),
+                        ptte: parseFloat(row.ptte)
+                    };
+                } else if (rdistValue === 'rcauchy') {
+                    // For Cauchy distribution, traditional effect size measures are not applicable
+                    // We can use the difference in location parameters divided by the average scale
+                    effectSize = Math.abs(par1_1 - par1_2) / ((par2_1 + par2_2) / 2);
+                } else if (rdistValue === 'rchisq,rpois' || rdistValue === 'rlnorm,rchisq') {
+                    // For mixed distributions, we can't calculate a meaningful effect size
+                    // We set this to null
+                    effectSize = null;
+                }
+
+                // return {
+                //     ...baseData,
+                //     n1,
+                //     n2,
+                //     par1_1,
+                //     par1_2,
+                //     ...(cellBlock.includes('1.1') ? { par2_1, par2_2 } : {}),
+                //     totalSampleSize: n1 + n2,
+                //     effectSize,
+                //     st: parseFloat(row.st),
+                //     wt: parseFloat(row.wt),
+                //     npbtt: parseFloat(row.npbtt),
+                //     wrst: parseFloat(row.wrst),
+                //     ptta: parseFloat(row.ptta),
+                //     ptte: parseFloat(row.ptte)
+                // };
+    
+                // return {
+                //     ...baseData,
+                //     n1,
+                //     n2,
+                //     par1_1,
+                //     par1_2,
+                //     par2_1,
+                //     par2_2,
+                //     totalSampleSize: n1 + n2,
+                //     effectSize,
+                //     st: parseFloat(row.st),
+                //     wt: parseFloat(row.wt),
+                //     npbtt: parseFloat(row.npbtt),
+                //     wrst: parseFloat(row.wrst),
+                //     ptta: parseFloat(row.ptta),
+                //     ptte: parseFloat(row.ptte)
+                // };
         } else if (cellBlock.startsWith('T5') || cellBlock.startsWith('T6')) {
             return {
                 ...baseData,

@@ -65,10 +65,16 @@ async function npboottprm_replext(options = {}, seedValues = {}) {
                 throw error;
             }
 
+            // filledValues.par1_1 = await fillInput(page, '#par1_1', generateRandomFromSeed(seedValues.par1_1.min, seedValues.par1_1.max, false), delayBetweenActions);
+            // filledValues.par2_1 = await fillInput(page, '#par2_1', generateRandomFromSeed(seedValues.par2_1.min, seedValues.par2_1.max, false), delayBetweenActions);
+            // filledValues.par1_2 = await fillInput(page, '#par1_2', generateRandomFromSeed(seedValues.par1_2.min, seedValues.par1_2.max, false), delayBetweenActions);
+            // filledValues.par2_2 = await fillInput(page, '#par2_2', generateRandomFromSeed(seedValues.par2_2.min, seedValues.par2_2.max, false), delayBetweenActions);
             filledValues.par1_1 = await fillInput(page, '#par1_1', generateRandomFromSeed(seedValues.par1_1.min, seedValues.par1_1.max, false), delayBetweenActions);
-            filledValues.par2_1 = await fillInput(page, '#par2_1', generateRandomFromSeed(seedValues.par2_1.min, seedValues.par2_1.max, false), delayBetweenActions);
             filledValues.par1_2 = await fillInput(page, '#par1_2', generateRandomFromSeed(seedValues.par1_2.min, seedValues.par1_2.max, false), delayBetweenActions);
-            filledValues.par2_2 = await fillInput(page, '#par2_2', generateRandomFromSeed(seedValues.par2_2.min, seedValues.par2_2.max, false), delayBetweenActions);
+            if (cellBlock.includes('1.1') || cellBlock.includes('3.1')){
+                filledValues.par2_1 = await fillInput(page, '#par2_1', generateRandomFromSeed(seedValues.par2_1.min, seedValues.par2_1.max, false), delayBetweenActions);
+                filledValues.par2_2 = await fillInput(page, '#par2_2', generateRandomFromSeed(seedValues.par2_2.min, seedValues.par2_2.max, false), delayBetweenActions);
+            }
             filledValues.n1 = await fillInput(page, '#n1', generateRandomFromSeed(seedValues.n1.min, seedValues.n1.max, true), delayBetweenActions);
             filledValues.n2 = await fillInput(page, '#n2', generateRandomFromSeed(seedValues.n2.min, seedValues.n2.max, true), delayBetweenActions);
         } else if (cellBlock.startsWith('T5') || cellBlock.startsWith('T6')) {
@@ -338,7 +344,7 @@ async function analyzeData(data, currentSeedValues, analysisIteration, downloadF
 // Usage example
 repeatedNpboottprm({
     iterations: 4,
-    cellBlock: 'T4 Cell Block 1.1',
+    cellBlock: 'T4 Cell Block 3.1',
     n_simulations: 10,
     nboot: 1000,
     conf_level: 0.95,
@@ -371,10 +377,17 @@ repeatedNpboottprm({
     // n2: { min: 5, max: 12 },
     // n3: { min: 5, max: 12 }
     // T4 Cell Block 1.1
-    par1_1: { min: 1, max: 2},
-    par2_1: { min: 0.5, max: 0.7},
-    par1_2: { min: 2, max: 3},
-    par2_2: { min: 0.9, max: 1.1},
+    // par1_1: { min: 1, max: 2},
+    // par2_1: { min: 0.5, max: 0.7},
+    // par1_2: { min: 2, max: 3},
+    // par2_2: { min: 0.9, max: 1.1},
+    // n1: { min: 5, max: 7 },
+    // n2: { min: 5, max: 7 }
+    // T4 Cell Block 3.1
+    par1_1: { min: 1, max: 3},
+    par2_1: { min: 0, max: 1},
+    par1_2: { min: 6, max: 4},
+    par2_2: { min: 0, max: 1},
     n1: { min: 5, max: 7 },
     n2: { min: 5, max: 7 }
 
