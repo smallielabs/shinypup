@@ -71,7 +71,7 @@ async function npboottprm_replext(options = {}, seedValues = {}) {
             // filledValues.par2_2 = await fillInput(page, '#par2_2', generateRandomFromSeed(seedValues.par2_2.min, seedValues.par2_2.max, false), delayBetweenActions);
             filledValues.par1_1 = await fillInput(page, '#par1_1', generateRandomFromSeed(seedValues.par1_1.min, seedValues.par1_1.max, false), delayBetweenActions);
             filledValues.par1_2 = await fillInput(page, '#par1_2', generateRandomFromSeed(seedValues.par1_2.min, seedValues.par1_2.max, false), delayBetweenActions);
-            if (cellBlock.includes('1.1') || cellBlock.includes('3.1')){
+            if (cellBlock.includes('1.1') || cellBlock.includes('3.1') || cellBlock.includes('5.1')){
                 filledValues.par2_1 = await fillInput(page, '#par2_1', generateRandomFromSeed(seedValues.par2_1.min, seedValues.par2_1.max, false), delayBetweenActions);
                 filledValues.par2_2 = await fillInput(page, '#par2_2', generateRandomFromSeed(seedValues.par2_2.min, seedValues.par2_2.max, false), delayBetweenActions);
             }
@@ -344,7 +344,7 @@ async function analyzeData(data, currentSeedValues, analysisIteration, downloadF
 // Usage example
 repeatedNpboottprm({
     iterations: 4,
-    cellBlock: 'T4 Cell Block 3.1',
+    cellBlock: 'T4 Cell Block 5.1',
     n_simulations: 10,
     nboot: 1000,
     conf_level: 0.95,
@@ -383,13 +383,20 @@ repeatedNpboottprm({
     // par2_2: { min: 0.9, max: 1.1},
     // n1: { min: 5, max: 7 },
     // n2: { min: 5, max: 7 }
-    // T4 Cell Block 3.1
-    par1_1: { min: 1, max: 3},
-    par2_1: { min: 0, max: 1},
-    par1_2: { min: 6, max: 4},
-    par2_2: { min: 0, max: 1},
-    n1: { min: 5, max: 7 },
-    n2: { min: 5, max: 7 }
+    // // T4 Cell Block 3.1
+    // par1_1: { min: 5, max: 3},
+    // par2_1: { min: 0, max: 1},
+    // par1_2: { min: 6, max: 4},
+    // par2_2: { min: 0, max: 1},
+    // n1: { min: 5, max: 7 },
+    // n2: { min: 5, max: 7 }
+        // T4 Cell Block 5.1
+        par1_1: { min: 4, max: 6},
+        par2_1: { min: 1, max: 3},
+        par1_2: { min: 9, max: 11},
+        par2_2: { min: 3, max: 5},
+        n1: { min: 4, max: 6 },
+        n2: { min: 4, max: 6 }
 
 }, {
     // Optional: OpenAI credentials

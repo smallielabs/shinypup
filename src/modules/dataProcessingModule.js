@@ -29,7 +29,7 @@ function processData(data, cellBlock) {
                 const par1_2 = parseFloat(row.par1_2);
 
                 let par2_1, par2_2;
-                if(cellBlock.includes('1.1') || cellBlock.includes('3.1')){
+                if(cellBlock.includes('1.1') || cellBlock.includes('3.1') || cellBlock.includes('5.1')){
                     par2_1 = parseFloat(row.par2_1);
                     par2_2 = parseFloat(row.par2_2);
                 }
@@ -120,6 +120,24 @@ function processData(data, cellBlock) {
                     // For Cauchy distribution, traditional effect size measures are not applicable
                     // We can use the difference in location parameters divided by the average scale
                     effectSize = Math.abs(par1_1 - par1_2) / ((par2_1 + par2_2) / 2);
+
+                    return {
+                        ...baseData,
+                        n1,
+                        n2,
+                        par1_1,
+                        par1_2,
+                        par2_1,
+                        par2_2,
+                        totalSampleSize: n1 + n2,
+                        effectSize,
+                        st: parseFloat(row.st),
+                        wt: parseFloat(row.wt),
+                        npbtt: parseFloat(row.npbtt),
+                        wrst: parseFloat(row.wrst),
+                        ptta: parseFloat(row.ptta),
+                        ptte: parseFloat(row.ptte)
+                    };
                 } else if (rdistValue === 'rchisq,rpois' || rdistValue === 'rlnorm,rchisq') {
                     // For mixed distributions, we can't calculate a meaningful effect size
                     // We set this to null

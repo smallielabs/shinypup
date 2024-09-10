@@ -39,7 +39,7 @@ function generatePlots(processedData, methods, methodShapes, cellBlock) {
         );
     } else if (cellBlock.startsWith('T4') || cellBlock.startsWith('TS1')) {
 
-        if(cellBlock.includes('1.1') || cellBlock.includes('3.1')){
+        if(cellBlock.includes('1.1') || cellBlock.includes('3.1') || cellBlock.includes('5.1')){
             plots.push(
                 createComparisonPlot(processedData, methods, methodShapes, {
                     xKey: 'effectSize',
