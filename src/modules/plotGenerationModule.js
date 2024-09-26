@@ -10,7 +10,7 @@ function generatePlots(processedData, methods, methodShapes, cellBlock) {
                 title: 'Rejection Rate vs Cohen\'s d',
                 xaxis: 'Cohen\'s d',
                 yaxis: 'Rejection Rate',
-                yrange: [0, 1]
+                yrange: [-0.1, 1.1]
             }),
             createStripPlot(processedData, ['n1', 'n2'], {
                 title: 'Sample Size Distribution',
@@ -46,7 +46,7 @@ function generatePlots(processedData, methods, methodShapes, cellBlock) {
                     title: 'Rejection Rate vs Effect Size',
                     xaxis: 'Effect Size',
                     yaxis: 'Rejection Rate',
-                    yrange: [0, 1]
+                    yrange: [-0.1, 1.1]
                 }),
                 createStripPlot(processedData, ['n1', 'n2'], {
                     title: 'Sample Size Distribution',
@@ -80,7 +80,7 @@ function generatePlots(processedData, methods, methodShapes, cellBlock) {
                     title: 'Rejection Rate vs Effect Size',
                     xaxis: 'Effect Size',
                     yaxis: 'Rejection Rate',
-                    yrange: [0, 1]
+                    yrange: [-0.1, 1.1]
                 }),
                 createStripPlot(processedData, ['n1', 'n2'], {
                     title: 'Sample Size Distribution',
@@ -118,7 +118,7 @@ function generatePlots(processedData, methods, methodShapes, cellBlock) {
                 title: 'Rejection Rate vs eta Squared',
                 xaxis: 'eta Squared',
                 yaxis: 'Rejection Rate',
-                yrange: [0, 1]
+                yrange: [-0.1, 1.1]
             }),
             createStripPlot(processedData, ['n1', 'n2', 'n3'], {
                 title: 'Sample Size Distribution',

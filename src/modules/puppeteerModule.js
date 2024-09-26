@@ -73,7 +73,7 @@ async function runSimulation(page) {
 }
 
 async function submitResults(page) {
-    await page.click('#submit');
+    await page.click('#postgres-submit');
     console.log('Clicked Submit button');
     await page.evaluate(() => {
         window.scrollTo(0, 0);
@@ -88,7 +88,7 @@ async function downloadAndProcessCSV(website) {
     await navigateToWebsite(page, website);
     
     // Wait for the download button to be available
-    await page.waitForSelector('#downloadBtn');
+    await page.waitForSelector('#postgres-downloadBtn');
     
     // Set up a listener for the download event
     const downloadPath = path.resolve('./downloads');
@@ -103,7 +103,7 @@ async function downloadAndProcessCSV(website) {
     await delay(5000);
     
     // Click the download button
-    await page.click('#downloadBtn');
+    await page.click('#postgres-downloadBtn');
     
     // Wait for the download to complete (you may need to adjust the delay)
     await delay(10000);

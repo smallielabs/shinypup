@@ -344,25 +344,25 @@ async function analyzeData(data, currentSeedValues, analysisIteration, downloadF
 // Usage example
 repeatedNpboottprm({
     iterations: 4,
-    cellBlock: 'T4 Cell Block 5.1',
+    cellBlock: 'T2 Cell Block 1.1',
     n_simulations: 10,
     nboot: 1000,
     conf_level: 0.95,
     delayBetweenActions: 500,
-    website: 'https://mightymetrika.shinyapps.io/npbreplext031/',
+    website: 'https://mightymetrika.shinyapps.io/npbreplext032/',
     delayBetweenIterations: 5000,
     downloadFrequency: 2,
     simulationsToAnalyze: 2
 }, {
     // Initial seed values with min and max
-    // M1: { min: 5, max: 9 },
-    // S1: { min: 2, max: 3 },
-    // M2: { min: 4, max: 10 },
-    // S2: { min: 1.5, max: 3.5 },
-    // Sk1: { min: -1, max: 1 },
-    // Sk2: { min: -1, max: 1 },
-    // n1: { min: 5, max: 12 },
-    // n2: { min: 5, max: 12 }
+    M1: { min: 5, max: 9 },
+    S1: { min: 2, max: 3 },
+    M2: { min: 4, max: 10 },
+    S2: { min: 1.5, max: 3.5 },
+    Sk1: { min: -1, max: 1 },
+    Sk2: { min: -1, max: 1 },
+    n1: { min: 5, max: 12 },
+    n2: { min: 5, max: 12 }
     // TS2
     // M1: { min: 5, max: 9 },
     // S1: { min: 2, max: 3 },
@@ -390,13 +390,13 @@ repeatedNpboottprm({
     // par2_2: { min: 0, max: 1},
     // n1: { min: 5, max: 7 },
     // n2: { min: 5, max: 7 }
-        // T4 Cell Block 5.1
-        par1_1: { min: 4, max: 6},
-        par2_1: { min: 1, max: 3},
-        par1_2: { min: 9, max: 11},
-        par2_2: { min: 3, max: 5},
-        n1: { min: 4, max: 6 },
-        n2: { min: 4, max: 6 }
+        // // T4 Cell Block 5.1
+        // par1_1: { min: 4, max: 6},
+        // par2_1: { min: 1, max: 3},
+        // par1_2: { min: 9, max: 11},
+        // par2_2: { min: 3, max: 5},
+        // n1: { min: 4, max: 6 },
+        // n2: { min: 4, max: 6 }
 
 }, {
     // Optional: OpenAI credentials
