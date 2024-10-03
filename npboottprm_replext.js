@@ -344,7 +344,7 @@ async function analyzeData(data, currentSeedValues, analysisIteration, downloadF
 // Usage example
 repeatedNpboottprm({
     iterations: 4,
-    cellBlock: 'T2 Cell Block 1.1',
+    cellBlock: 'T4 Cell Block 4.1',
     n_simulations: 10,
     nboot: 1000,
     conf_level: 0.95,
@@ -355,14 +355,14 @@ repeatedNpboottprm({
     simulationsToAnalyze: 2
 }, {
     // Initial seed values with min and max
-    M1: { min: 5, max: 9 },
-    S1: { min: 2, max: 3 },
-    M2: { min: 4, max: 10 },
-    S2: { min: 1.5, max: 3.5 },
-    Sk1: { min: -1, max: 1 },
-    Sk2: { min: -1, max: 1 },
-    n1: { min: 5, max: 12 },
-    n2: { min: 5, max: 12 }
+    // M1: { min: 5, max: 9 },
+    // S1: { min: 2, max: 3 },
+    // M2: { min: 4, max: 10 },
+    // S2: { min: 1.5, max: 3.5 },
+    // Sk1: { min: -1, max: 1 },
+    // Sk2: { min: -1, max: 1 },
+    // n1: { min: 5, max: 12 },
+    // n2: { min: 5, max: 12 }
     // TS2
     // M1: { min: 5, max: 9 },
     // S1: { min: 2, max: 3 },
@@ -383,6 +383,13 @@ repeatedNpboottprm({
     // par2_2: { min: 0.9, max: 1.1},
     // n1: { min: 5, max: 7 },
     // n2: { min: 5, max: 7 }
+    // // T4 Cell Block 2.1 (THIS IS THROWING AN ERROR EVEN WHEN JUST RUNNING THROUGH THE WEBSITE)
+    // par1_1: { min: 5, max: 10},
+    // // par2_1: { min: 1, max: 3},
+    // par1_2: { min: 5, max: 10},
+    // // par2_2: { min: 3, max: 5},
+    // n1: { min: 4, max: 6 },
+    // n2: { min: 4, max: 6 }
     // // T4 Cell Block 3.1
     // par1_1: { min: 5, max: 3},
     // par2_1: { min: 0, max: 1},
@@ -390,14 +397,27 @@ repeatedNpboottprm({
     // par2_2: { min: 0, max: 1},
     // n1: { min: 5, max: 7 },
     // n2: { min: 5, max: 7 }
-        // // T4 Cell Block 5.1
-        // par1_1: { min: 4, max: 6},
-        // par2_1: { min: 1, max: 3},
-        // par1_2: { min: 9, max: 11},
-        // par2_2: { min: 3, max: 5},
-        // n1: { min: 4, max: 6 },
-        // n2: { min: 4, max: 6 }
-
+    // T4 Cell Block 4.1 (THIS GAVE SUMMARY STATS BUT NO PLOTS)
+    par1_1: { min: 1, max: 2},
+    par2_1: { min: 0.6, max: 0.8},
+    par1_2: { min: 3, max: 4},
+    par2_2: { min: 4, max: 5},
+    n1: { min: 4, max: 6 },
+    n2: { min: 4, max: 6 }
+    // T4 Cell Block 5.1
+    // par1_1: { min: 4, max: 6},
+    // par2_1: { min: 1, max: 3},
+    // par1_2: { min: 9, max: 11},
+    // par2_2: { min: 3, max: 5},
+    // n1: { min: 4, max: 6 },
+    // n2: { min: 4, max: 6 }
+    // // T4 Cell Block 6.1 (THIS CRASHED AS WELL)
+    // par1_1: { min: 6, max: 7},
+    // par2_1: { min: 0, max: 1},
+    // par1_2: { min: 10, max: 11},
+    // // par2_2: { min: 3, max: 5},
+    // n1: { min: 5, max: 6 },
+    // n2: { min: 5, max: 6 }
 }, {
     // Optional: OpenAI credentials
     apiKey: process.env.OPENAI_API_KEY,
